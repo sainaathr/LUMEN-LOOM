@@ -120,6 +120,8 @@ namespace LumenLoom.Core
 
             // 10. Wire references
             beamSys.SetEnergySource(source);
+            beamSys.SetBeamValidator(beamVal);
+            beamSys.SetBeamRenderer(beamRend);
             beamVal.SetTarget(target);
             beamSys.RefreshSceneNodes();
             beamSys.RecalculateBeam();
@@ -208,6 +210,7 @@ namespace LumenLoom.Core
             baseCylinder.transform.SetParent(sourceObj.transform);
             baseCylinder.transform.localPosition = new Vector3(0, -0.3f, 0);
             baseCylinder.transform.localScale = new Vector3(0.9f, 0.2f, 0.9f);
+            DestroyCollider(baseCylinder);
 
             // Emitter core
             GameObject coreSphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
@@ -215,6 +218,7 @@ namespace LumenLoom.Core
             coreSphere.transform.SetParent(sourceObj.transform);
             coreSphere.transform.localPosition = Vector3.zero;
             coreSphere.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
+            DestroyCollider(coreSphere);
 
             // Rotating Ring
             GameObject ring = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
@@ -222,6 +226,7 @@ namespace LumenLoom.Core
             ring.transform.SetParent(sourceObj.transform);
             ring.transform.localPosition = Vector3.zero;
             ring.transform.localScale = new Vector3(0.75f, 0.05f, 0.75f);
+            DestroyCollider(ring);
 
             // Add Light
             GameObject lightObj = new GameObject("Source_Glow");
@@ -249,6 +254,7 @@ namespace LumenLoom.Core
             baseCube.transform.SetParent(targetObj.transform);
             baseCube.transform.localPosition = new Vector3(0, -0.3f, 0);
             baseCube.transform.localScale = new Vector3(1.1f, 0.25f, 1.1f);
+            DestroyCollider(baseCube);
 
             // Sensor Core
             GameObject coreCube = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -256,6 +262,7 @@ namespace LumenLoom.Core
             coreCube.transform.SetParent(targetObj.transform);
             coreCube.transform.localPosition = Vector3.zero;
             coreCube.transform.localScale = new Vector3(0.6f, 0.6f, 0.6f);
+            DestroyCollider(coreCube);
 
             // Add Light
             GameObject lightObj = new GameObject("Target_Light");
@@ -286,6 +293,7 @@ namespace LumenLoom.Core
             body.transform.SetParent(nodeObj.transform);
             body.transform.localPosition = Vector3.zero;
             body.transform.localScale = new Vector3(0.8f, 0.4f, 0.8f);
+            DestroyCollider(body);
 
             // Optical lens / arrow pointing forward
             GameObject pointer = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -293,6 +301,7 @@ namespace LumenLoom.Core
             pointer.transform.SetParent(nodeObj.transform);
             pointer.transform.localPosition = new Vector3(0, 0.25f, 0.45f);
             pointer.transform.localScale = new Vector3(0.2f, 0.15f, 0.4f);
+            DestroyCollider(pointer);
 
             // Glow Light
             GameObject lightObj = new GameObject("Node_Glow");
@@ -309,6 +318,16 @@ namespace LumenLoom.Core
 
             PuzzleNode nodeComp = nodeObj.AddComponent<PuzzleNode>();
             return nodeComp;
+        }
+
+        private static void DestroyCollider(GameObject go)
+        {
+            if (go == null) return;
+            Collider col = go.GetComponent<Collider>();
+            if (col != null)
+            {
+                DestroyImmediate(col);
+            }
         }
     }
 }

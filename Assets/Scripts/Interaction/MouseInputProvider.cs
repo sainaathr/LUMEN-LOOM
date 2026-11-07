@@ -172,7 +172,6 @@ namespace LumenLoom.Interaction
             if (Input.GetKeyDown(KeyCode.Escape))
             {
                 DeselectCurrentNode();
-                OnDeselectRequested?.Invoke();
             }
         }
 
@@ -200,6 +199,7 @@ namespace LumenLoom.Interaction
                 _selectedNode = null;
             }
             _isDragging = false;
+            OnDeselectRequested?.Invoke();
         }
     }
 }

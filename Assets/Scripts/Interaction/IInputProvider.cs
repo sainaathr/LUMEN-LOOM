@@ -54,6 +54,16 @@ namespace LumenLoom.Interaction
         /// The currently selected node, if any.
         /// </summary>
         PuzzleNode SelectedNode { get; }
+
+        /// <summary>
+        /// Programmatically selects a node.
+        /// </summary>
+        void SelectNode(PuzzleNode node);
+
+        /// <summary>
+        /// Clears the currently selected node.
+        /// </summary>
+        void DeselectCurrentNode();
     }
 }
 

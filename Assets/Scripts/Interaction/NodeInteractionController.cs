@@ -15,13 +15,29 @@ namespace LumenLoom.Interaction
         [SerializeField] private MonoBehaviour inputProviderComponent;
         [SerializeField] private BeamSystem beamSystem;
         [SerializeField] private AudioFeedbackManager audioManager;
+        [SerializeField] private PuzzleManager puzzleManager;
 
         private IInputProvider _inputProvider;
         private PuzzleNode _activeNode;
 
+        public PuzzleNode ActiveNode => _activeNode;
+        public IInputProvider InputProvider => _inputProvider;
+
         private void Awake()
         {
             ResolveInputProvider();
+            if (puzzleManager == null)
+            {
+                puzzleManager = FindFirstObjectByType<PuzzleManager>();
+            }
+            if (beamSystem == null)
+            {
+                beamSystem = FindFirstObjectByType<BeamSystem>();
+            }
+            if (audioManager == null)
+            {
+                audioManager = FindFirstObjectByType<AudioFeedbackManager>();
+            }
         }
 
         private void OnEnable()
@@ -66,6 +82,7 @@ namespace LumenLoom.Interaction
             _inputProvider.OnNodeDragPositionUpdated += HandleNodeMoved;
             _inputProvider.OnNodeRotationDelta += HandleNodeRotated;
             _inputProvider.OnNodeReleased += HandleNodeReleased;
+            _inputProvider.OnResetRequested += HandleResetRequested;
             _inputProvider.OnDeselectRequested += HandleDeselect;
         }
 
@@ -77,6 +94,7 @@ namespace LumenLoom.Interaction
             _inputProvider.OnNodeDragPositionUpdated -= HandleNodeMoved;
             _inputProvider.OnNodeRotationDelta -= HandleNodeRotated;
             _inputProvider.OnNodeReleased -= HandleNodeReleased;
+            _inputProvider.OnResetRequested -= HandleResetRequested;
             _inputProvider.OnDeselectRequested -= HandleDeselect;
         }
 
@@ -121,7 +139,7 @@ namespace LumenLoom.Interaction
                 {
                     audioManager.PlayNodeReleaseSound();
                 }
-                _activeNode = null;
+                // Retain _activeNode so rotation via keyboard (Q/E) or scroll wheel works seamlessly while selected
             }
 
             if (beamSystem != null)
@@ -130,9 +148,22 @@ namespace LumenLoom.Interaction
             }
         }
 
-        private void HandleDeselect()
+        private void HandleResetRequested()
         {
             _activeNode = null;
+            if (puzzleManager != null)
+            {
+                puzzleManager.ResetPuzzle();
+            }
+        }
+
+        private void HandleDeselect()
+        {
+            if (_activeNode != null)
+            {
+                _activeNode.SetSelected(false);
+                _activeNode = null;
+            }
         }
     }
 }

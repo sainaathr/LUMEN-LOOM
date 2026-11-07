@@ -44,10 +44,32 @@ namespace LumenLoom.Rendering
 
         public event Action<BeamPath> OnBeamPathCalculated;
 
+        private void Awake()
+        {
+            if (beamRenderer == null)
+            {
+                beamRenderer = GetComponent<BeamRenderer>() ?? FindFirstObjectByType<BeamRenderer>();
+            }
+            if (beamValidator == null)
+            {
+                beamValidator = GetComponent<BeamValidator>() ?? FindFirstObjectByType<BeamValidator>();
+            }
+        }
+
         private void Start()
         {
             RefreshSceneNodes();
             RecalculateBeam();
+        }
+
+        public void SetBeamValidator(BeamValidator validator)
+        {
+            beamValidator = validator;
+        }
+
+        public void SetBeamRenderer(BeamRenderer renderer)
+        {
+            beamRenderer = renderer;
         }
 
         public void SetEnergySource(EnergySource source)
@@ -67,6 +89,8 @@ namespace LumenLoom.Rendering
         /// </summary>
         public void RecalculateBeam()
         {
+            Physics.SyncTransforms();
+
             _currentPath.Points.Clear();
             _currentPath.VisitedNodes.Clear();
             _visitedNodeSet.Clear();
@@ -89,15 +113,27 @@ namespace LumenLoom.Rendering
 
             _currentPath.Points.Add(currentOrigin);
 
+            PuzzleNode lastEmittingNode = null;
             int bounces = 0;
 
             while (bounces < maxReflections)
             {
                 bounces++;
 
+                // Prevent raycasting inside the emitting node's collider
+                float currentOffset = lastEmittingNode != null ? 0.6f : rayOriginOffset;
+                Vector3 rayOrigin = currentOrigin + currentDirection * currentOffset;
+
                 // Cast ray forward
-                if (Physics.Raycast(currentOrigin + currentDirection * rayOriginOffset, currentDirection, out RaycastHit hit, maxBeamRange, collisionLayers))
+                if (Physics.Raycast(rayOrigin, currentDirection, out RaycastHit hit, maxBeamRange, collisionLayers))
                 {
+                    PuzzleNode hitNode = hit.collider.GetComponentInParent<PuzzleNode>();
+                    if (hitNode != null && hitNode == lastEmittingNode)
+                    {
+                        // Ignore self-intersection with the node the beam just emitted from
+                        continue;
+                    }
+
                     _currentPath.Points.Add(hit.point);
 
                     // 1. Check for Target Receiver
@@ -113,22 +149,22 @@ namespace LumenLoom.Rendering
                     }
 
                     // 2. Check for Puzzle Node
-                    PuzzleNode node = hit.collider.GetComponentInParent<PuzzleNode>();
-                    if (node != null)
+                    if (hitNode != null)
                     {
                         // Infinite loop detection
-                        if (_visitedNodeSet.Contains(node))
+                        if (_visitedNodeSet.Contains(hitNode))
                         {
                             _currentPath.HasLoopDetected = true;
                             break;
                         }
 
-                        _visitedNodeSet.Add(node);
-                        _currentPath.VisitedNodes.Add(node);
+                        _visitedNodeSet.Add(hitNode);
+                        _currentPath.VisitedNodes.Add(hitNode);
+                        lastEmittingNode = hitNode;
 
                         // Calculate new origin and direction
-                        currentOrigin = node.GetOutputOrigin();
-                        currentDirection = node.CalculateOutputDirection(currentDirection, hit.normal).normalized;
+                        currentOrigin = hitNode.GetOutputOrigin();
+                        currentDirection = hitNode.CalculateOutputDirection(currentDirection, hit.normal).normalized;
                         _currentPath.Points.Add(currentOrigin);
                         continue;
                     }

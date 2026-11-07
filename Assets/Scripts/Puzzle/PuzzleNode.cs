@@ -200,6 +200,7 @@ namespace LumenLoom.Puzzle
             {
                 pointGlowLight.color = targetColor;
                 pointGlowLight.intensity = intensity;
+                pointGlowLight.range = _isSelected ? 5.0f : (_isHovered ? 4.0f : 3.0f);
             }
         }
 

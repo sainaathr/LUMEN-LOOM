@@ -212,3 +212,4 @@ Both workspace repositories (`C:\Users\Administrator\Desktop\Projects\LUMEN LOOM
 4. On the dedicated VR workstation, install Meta XR SDK (`com.meta.xr.sdk.core` and `com.meta.xr.sdk.interaction`) via Unity Package Manager.
 5. In `MainPuzzleScene.unity`, swap the active input provider on `NodeInteractionController` from `MouseInputProvider` to `HandInputProvider`.
 6. Connect Meta Quest 2 / 3 / Pro via Quest Link / AirLink, enter Play Mode, and test direct hand pinch-grab manipulation.
+

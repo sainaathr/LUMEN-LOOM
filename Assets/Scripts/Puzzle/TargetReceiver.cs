@@ -97,6 +97,7 @@ namespace LumenLoom.Puzzle
             {
                 targetGlowLight.color = targetColor;
                 targetGlowLight.intensity = intensity;
+                targetGlowLight.range = _isEnergized ? 6.5f : 3.5f;
             }
         }
 

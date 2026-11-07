@@ -148,10 +148,10 @@ namespace LumenLoom.UI
 
             // Controls instruction card at bottom
             GUI.backgroundColor = new Color(0.05f, 0.08f, 0.12f, 0.85f);
-            GUILayout.BeginArea(new Rect(20, Screen.height - 75, 450, 60), GUI.skin.box);
+            GUILayout.BeginArea(new Rect(20, Screen.height - 75, 520, 60), GUI.skin.box);
             GUIStyle boldHeaderStyle = new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold };
-            GUILayout.Label("CONTROLS:", boldHeaderStyle);
-            GUILayout.Label("Left Click: Select/Drag | Q/E: Rotate | R: Reset | Esc: Deselect");
+            GUILayout.Label("CONTROLS & SHORTCUTS:", boldHeaderStyle);
+            GUILayout.Label("Left Click: Select/Drag | Q/E or Scroll: Rotate | R: Reset Chamber | Esc: Deselect");
             GUILayout.EndArea();
 
             // Reset button at top right
