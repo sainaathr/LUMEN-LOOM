@@ -19,6 +19,10 @@ namespace LumenLoom.Interaction
         [Header("Debug Simulation (Editor / Play Mode)")]
         [SerializeField] private bool simulateHandWithKeys = false;
 
+        public float PinchThreshold { get => pinchThreshold; set => pinchThreshold = value; }
+        public bool EnableWristTurnRotation { get => enableWristTurnRotation; set => enableWristTurnRotation = value; }
+        public bool SimulateHandWithKeys { get => simulateHandWithKeys; set => simulateHandWithKeys = value; }
+
         public event Action<PuzzleNode> OnNodeSelected;
         public event Action<Vector3> OnNodeDragPositionUpdated;
         public event Action<float> OnNodeRotationDelta;
@@ -67,7 +71,7 @@ namespace LumenLoom.Interaction
         /// </summary>
         public void HandleMetaHandRotate(float angleDeltaDegrees)
         {
-            if (_selectedNode == null) return;
+            if (_selectedNode == null || !enableWristTurnRotation) return;
             OnNodeRotationDelta?.Invoke(angleDeltaDegrees * rotationScaleMultiplier);
         }
 
