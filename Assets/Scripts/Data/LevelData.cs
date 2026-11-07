@@ -53,3 +53,4 @@ namespace LumenLoom.Data
         public List<ObstacleConfig> obstacles = new List<ObstacleConfig>();
     }
 }
+

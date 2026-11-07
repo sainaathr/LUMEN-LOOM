@@ -144,3 +144,4 @@ LUMEN LOOM/
 1. **Integrated Graphics Optimization:** Shaders currently use basic URP Lit/Unlit materials. Complex bloom post-processing is intentionally omitted to guarantee 60+ FPS on Intel Iris Xe.
 2. **Meta XR SDK Dependency Decoupling:** `HandInputProvider.cs` contains the architectural hooks for Meta Interaction SDK, but Meta SDK package imports are deferred to the RTX 3050 machine to prevent package overhead on this laptop.
 3. **Audio:** Procedural audio synthesis is active. If running in an environment where audio devices are disabled, Unity may log harmless audio device warnings.
+

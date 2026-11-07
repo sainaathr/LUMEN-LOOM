@@ -130,3 +130,4 @@ The `BeamValidator.cs` and `PuzzleManager.cs` components manage game state progr
 2. **Forward Rendering Path:** Single-pass instanced rendering in URP eliminates deferred G-buffer memory bandwidth limits.
 3. **Procedural Synth Audio:** Uses `AudioClip.Create(...)` to synthesize all UI and puzzle sound waveforms in memory at startup, avoiding asset loading latency and disk footprint.
 4. **Batched Geometry:** Standard primitive meshes are used with lightweight shared shaders.
+

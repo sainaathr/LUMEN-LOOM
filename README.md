@@ -64,3 +64,4 @@ The core gameplay is completely decoupled from hardware APIs:
 The algorithmic raycaster, reflection math, boundary clamping, and loop detection are verified by a standalone test suite:
 - Run `.\scratch\LumenLoomCoreTests.exe` to execute the core tests.
 - Results: **7 / 7 Tests Passing**.
+

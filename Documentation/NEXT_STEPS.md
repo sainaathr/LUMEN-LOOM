@@ -65,3 +65,4 @@ This document outlines the exact, prioritized tasks for the next development spr
   1. Add subtle emissive bloom using URP Volume (optimized single-pass bloom).
   2. Add floating dust motes or ambient energy particles caught in the beam path.
   3. Use vertex-colored or unlit additive shaders for the laser core.
+
