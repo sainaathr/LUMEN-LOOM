@@ -87,6 +87,26 @@ namespace LumenLoom.Interaction
         }
 
         /// <summary>
+        /// Hook invoked when optical tracking of the grabbing hand is lost unexpectedly.
+        /// Safely releases interaction state without leaving nodes in a dragging lock.
+        /// </summary>
+        public void HandleMetaTrackingLost()
+        {
+            if (_isDragging)
+            {
+                HandleMetaHandGrabEnd();
+            }
+            if (_selectedNode != null)
+            {
+                DeselectCurrentNode();
+            }
+            if (_hoveredNode != null)
+            {
+                SetHoveredNode(null);
+            }
+        }
+
+        /// <summary>
         /// Hook invoked by a two-handed palm clap or spatial UI button for reset.
         /// </summary>
         public void HandleMetaHandResetTrigger()
