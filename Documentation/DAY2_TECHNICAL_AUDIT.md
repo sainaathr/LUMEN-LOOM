@@ -212,3 +212,4 @@ The LUMEN LOOM prototype is in a stable, verified, zero-error state:
    - Import `com.meta.xr.sdk.core` (`69.0.0`) and `com.meta.xr.sdk.interaction` (`69.0.0`).
    - Wire `HandGrabInteractable` to `HandInputProvider.cs`.
    - Test in the Meta XR Simulator or Quest 3 Link.
+
