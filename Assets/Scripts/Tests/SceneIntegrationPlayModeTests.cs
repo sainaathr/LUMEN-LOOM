@@ -456,5 +456,57 @@ namespace LumenLoom.Tests
             tutMgr.SetTutorialActive(true);
             yield return null;
         }
+
+        [UnityTest]
+        public IEnumerator Chamber04_ReflectionProtocol_LoadsWithDualTargetsAndObstacles()
+        {
+            var levelMgr = Object.FindFirstObjectByType<LevelManager>();
+            Assert.IsNotNull(levelMgr, "LevelManager must be present in scene.");
+
+            // Chamber 04 is index 3 (4th chamber)
+            levelMgr.LoadLevel(3, forceUnlock: true);
+            yield return null;
+
+            Assert.AreEqual(3, levelMgr.CurrentLevelIndex, "Current level index should be 3 (Chamber 04).");
+            Assert.AreEqual("Chamber 04: Reflection Protocol", levelMgr.CurrentLevel.levelTitle);
+            Assert.IsTrue(levelMgr.CurrentLevel.useDualTargets, "Chamber 04 must have useDualTargets enabled.");
+            Assert.AreEqual(3, levelMgr.CurrentLevel.initialNodes.Count, "Chamber 04 requires 3 initial nodes.");
+            Assert.AreEqual(2, levelMgr.CurrentLevel.obstacles.Count, "Chamber 04 requires 2 obstacle barriers.");
+
+            var beamValidator = Object.FindFirstObjectByType<BeamValidator>();
+            Assert.IsNotNull(beamValidator, "BeamValidator must be present.");
+            Assert.AreEqual(2, beamValidator.RequiredTargets.Count, "Chamber 04 must have 2 targets populated in BeamValidator.");
+
+            var obstacles = Object.FindObjectsByType<Obstacle>(FindObjectsSortMode.None);
+            Assert.AreEqual(2, obstacles.Length, "Chamber 04 should spawn exactly 2 active obstacles in hierarchy.");
+        }
+
+        [UnityTest]
+        public IEnumerator Chamber04_Reset_PreservesNodeTypesAndBoundaries()
+        {
+            var levelMgr = Object.FindFirstObjectByType<LevelManager>();
+            Assert.IsNotNull(levelMgr, "LevelManager must be present.");
+            levelMgr.LoadLevel(3, forceUnlock: true);
+            yield return null;
+
+            var puzzleMgr = Object.FindFirstObjectByType<PuzzleManager>();
+            Assert.IsNotNull(puzzleMgr, "PuzzleManager must be present.");
+
+            // Verify nodes in scene
+            var nodes = puzzleMgr.Nodes;
+            Assert.IsTrue(nodes.Count >= 3, "Chamber 04 must have at least 3 nodes registered.");
+
+            // Modify position of first node
+            Vector3 originalPos = nodes[0].transform.position;
+            nodes[0].MoveToClamped(new Vector3(0f, 0.5f, 0f));
+            Assert.AreNotEqual(originalPos, nodes[0].transform.position);
+
+            // Trigger reset
+            puzzleMgr.ResetPuzzle();
+            yield return null;
+
+            // Re-fetch
+            Assert.AreEqual(originalPos, nodes[0].transform.position, "ResetPuzzle should restore node to initial chamber spawn position.");
+        }
     }
 }

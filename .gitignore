@@ -43,3 +43,6 @@ crash*
 *.aab
 *.unitypackage
 
+
+/[Uu]tmp/
+
