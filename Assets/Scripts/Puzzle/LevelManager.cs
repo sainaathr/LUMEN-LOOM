@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using LumenLoom.Core;
 using LumenLoom.Data;
 using LumenLoom.Rendering;
 
@@ -57,6 +58,17 @@ namespace LumenLoom.Puzzle
             }
 
             EnsureBuiltInLevels();
+
+            // Load saved progress — apply only if save exists and is valid.
+            if (SaveSystem.TryLoad(out SaveData saved, out string loadError))
+            {
+                unlockedLevelIndex = Mathf.Clamp(saved.unlockedChamberIndex, 0, TotalLevels - 1);
+                Debug.Log($"[LevelManager] Restored progress — unlocked up to chamber {unlockedLevelIndex + 1}.");
+            }
+            else if (!string.IsNullOrEmpty(loadError))
+            {
+                Debug.LogWarning($"[LevelManager] Save load warning: {loadError}");
+            }
         }
 
         private void Start()
@@ -97,6 +109,24 @@ namespace LumenLoom.Puzzle
                 unlockedLevelIndex = currentLevelIndex + 1;
                 Debug.Log($"[LUMEN LOOM] Chamber {unlockedLevelIndex + 1} unlocked!");
             }
+
+            // Mark current chamber as completed and persist progress.
+            SaveData data = SaveSystem.Load();
+            data.unlockedChamberIndex = unlockedLevelIndex;
+
+            // Resize completedChambers array if needed.
+            if (data.completedChambers == null || data.completedChambers.Length < TotalLevels)
+            {
+                bool[] extended = new bool[TotalLevels];
+                if (data.completedChambers != null)
+                    Array.Copy(data.completedChambers, extended, Mathf.Min(data.completedChambers.Length, TotalLevels));
+                data.completedChambers = extended;
+            }
+
+            if (currentLevelIndex >= 0 && currentLevelIndex < data.completedChambers.Length)
+                data.completedChambers[currentLevelIndex] = true;
+
+            SaveSystem.Save(data);
         }
 
         public bool IsLevelUnlocked(int index)
@@ -417,6 +447,65 @@ namespace LumenLoom.Puzzle
                     new NodeSpawnConfig { nodeId = "Node_Beta", position = new Vector3(3.5f, 0.5f, 0.0f), rotationEuler = new Vector3(0, 90f, 0), redirectType = NodeRedirectType.OrientationForward, allowMovement = true, allowRotation = true }
                 };
                 levelSequence.Add(ch3);
+
+                // ── Chamber 04: Reflection Protocol ─────────────────────────────────
+                // Three mirror/prism nodes + 2 obstacles + 2 targets.
+                // Canonical solution:
+                //   Source  (-3.5, 0.5, -3.5) →forward→
+                //   Mirror1 (-3.5, 0.5,  2.0) →right→
+                //   Mirror2 ( 1.5, 0.5,  2.0) →back→
+                //   Prism3  ( 1.5, 0.5, -1.0) →right→  Target1 (3.5,  0.5, -1.0)
+                //                              and prism secondary →back→ Target2 (1.5, 0.5, 3.5)
+                LevelData ch4 = ScriptableObject.CreateInstance<LevelData>();
+                ch4.levelTitle    = "Chamber 04: Reflection Protocol";
+                ch4.objectiveText = "Calibrate three mirror nodes to cascade and split the energy beam onto both targets.";
+                ch4.useDualTargets  = true;
+                ch4.sourcePosition  = new Vector3(-3.5f, 0.5f, -3.5f);
+                ch4.sourceDirection = Vector3.forward;
+                ch4.targetPosition  = new Vector3(3.5f,  0.5f, -1.0f);
+                ch4.targetForward   = Vector3.left;
+                ch4.target2Position = new Vector3(1.5f,  0.5f,  3.5f);
+                ch4.target2Forward  = Vector3.back;
+                ch4.minNodesRequired = 3;
+                ch4.xBounds      = new Vector2(-4.5f, 4.5f);
+                ch4.zBounds      = new Vector2(-4.5f, 4.5f);
+                ch4.puzzlePlaneY = 0.5f;
+                ch4.initialNodes = new List<NodeSpawnConfig>
+                {
+                    new NodeSpawnConfig
+                    {
+                        nodeId        = "Mirror_1",
+                        position      = new Vector3(-3.5f, 0.5f,  2.0f),
+                        rotationEuler = new Vector3(0, 45f, 0),
+                        redirectType  = NodeRedirectType.MirrorReflection,
+                        allowMovement = true,
+                        allowRotation = true
+                    },
+                    new NodeSpawnConfig
+                    {
+                        nodeId        = "Mirror_2",
+                        position      = new Vector3( 1.5f, 0.5f,  2.0f),
+                        rotationEuler = new Vector3(0, 45f, 0),
+                        redirectType  = NodeRedirectType.MirrorReflection,
+                        allowMovement = true,
+                        allowRotation = true
+                    },
+                    new NodeSpawnConfig
+                    {
+                        nodeId        = "Prism_3",
+                        position      = new Vector3( 1.5f, 0.5f, -1.0f),
+                        rotationEuler = new Vector3(0, 45f, 0),
+                        redirectType  = NodeRedirectType.PrismSplit,
+                        allowMovement = true,
+                        allowRotation = true
+                    }
+                };
+                ch4.obstacles = new List<ObstacleConfig>
+                {
+                    new ObstacleConfig { position = new Vector3(-1.0f, 0.5f, -0.5f), size = new Vector3(2.0f, 1.2f, 0.6f) },
+                    new ObstacleConfig { position = new Vector3( 0.0f, 0.5f,  3.0f), size = new Vector3(0.6f, 1.2f, 1.5f) }
+                };
+                levelSequence.Add(ch4);
             }
         }
     }
