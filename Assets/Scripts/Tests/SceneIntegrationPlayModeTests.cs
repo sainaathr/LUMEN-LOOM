@@ -8,6 +8,8 @@ using LumenLoom.Core;
 using LumenLoom.Puzzle;
 using LumenLoom.Rendering;
 using LumenLoom.Interaction;
+using LumenLoom.UI;
+using LumenLoom.Data;
 
 namespace LumenLoom.Tests
 {
@@ -285,6 +287,174 @@ namespace LumenLoom.Tests
 
             Assert.IsNotNull(beamSystem.CurrentPath);
             Assert.Greater(beamSystem.CurrentPath.Points.Count, 0, "Beam path must continue generating valid points.");
+        }
+
+        [UnityTest]
+        public IEnumerator Test11_Chamber02_ObstacleOcclusion_BlocksDirectBeam()
+        {
+            LevelManager levelManager = Object.FindFirstObjectByType<LevelManager>();
+            BeamSystem beamSystem = Object.FindFirstObjectByType<BeamSystem>();
+            BeamValidator validator = Object.FindFirstObjectByType<BeamValidator>();
+
+            Assert.IsNotNull(levelManager);
+            levelManager.LoadLevel(1, true); // Force unlock Chamber 02
+            yield return null;
+
+            Assert.AreEqual("Chamber 02: Occlusion Barrier", levelManager.CurrentLevel.levelTitle);
+
+            // Obstacle exists in scene
+            Obstacle obstacle = Object.FindFirstObjectByType<Obstacle>();
+            Assert.IsNotNull(obstacle, "Chamber 02 must contain an Obstacle component.");
+
+            // Directly aim EnergySource into the central obstacle at (0, 0.5, 0)
+            EnergySource source = Object.FindFirstObjectByType<EnergySource>();
+            source.transform.position = new Vector3(0, 0.5f, -3.0f);
+            source.transform.forward = Vector3.forward;
+
+            beamSystem.RecalculateBeam();
+            yield return null;
+
+            Assert.IsTrue(beamSystem.CurrentPath.HitObstacle, "Beam hitting central obstacle must register HitObstacle.");
+            Assert.IsFalse(validator.IsSolved, "Validator must report unsolved when beam is blocked by obstacle.");
+            Assert.AreEqual("BEAM BLOCKED BY OBSTACLE", validator.StatusMessage, "Status message must reflect obstacle blocking.");
+        }
+
+        [UnityTest]
+        public IEnumerator Test12_Chamber02_FullPuzzleSolve_DetoursAroundObstacle()
+        {
+            LevelManager levelManager = Object.FindFirstObjectByType<LevelManager>();
+            BeamSystem beamSystem = Object.FindFirstObjectByType<BeamSystem>();
+            BeamValidator validator = Object.FindFirstObjectByType<BeamValidator>();
+            TargetReceiver target = Object.FindFirstObjectByType<TargetReceiver>();
+            EnergySource source = Object.FindFirstObjectByType<EnergySource>();
+
+            levelManager.LoadLevel(1, true);
+            yield return null;
+
+            PuzzleNode[] nodes = Object.FindObjectsByType<PuzzleNode>(FindObjectsSortMode.None);
+            Assert.IsTrue(nodes.Length >= 2);
+
+            PuzzleNode nodeAlpha = System.Array.Find(nodes, n => n.name.Contains("Alpha")) ?? nodes[0];
+            PuzzleNode nodeBeta = System.Array.Find(nodes, n => n.name.Contains("Beta")) ?? nodes[1];
+
+            // 1. Source at (-3.5, 0.5, -3.0) aiming +Z
+            source.transform.position = new Vector3(-3.5f, 0.5f, -3.0f);
+            source.transform.forward = Vector3.forward;
+
+            // 2. Node Alpha at (-3.5, 0.5, 2.5) rotated 90 deg aiming +X
+            nodeAlpha.transform.position = new Vector3(-3.5f, 0.5f, 2.5f);
+            nodeAlpha.transform.rotation = Quaternion.Euler(0, 90f, 0);
+
+            // 3. Node Beta at (3.5, 0.5, 2.5) rotated 180 deg aiming -Z
+            nodeBeta.transform.position = new Vector3(3.5f, 0.5f, 2.5f);
+            nodeBeta.transform.rotation = Quaternion.Euler(0, 180f, 0);
+
+            // 4. Target at (3.5, 0.5, -3.0) facing +Z (forward)
+            target.transform.position = new Vector3(3.5f, 0.5f, -3.0f);
+            target.transform.forward = Vector3.forward;
+
+            beamSystem.RecalculateBeam();
+            yield return null;
+
+            Assert.IsTrue(beamSystem.CurrentPath.HasReachedTarget, "Chamber 02 beam must detour around obstacle and reach target.");
+            Assert.IsFalse(beamSystem.CurrentPath.HitObstacle, "Successful detour must not collide with obstacle.");
+            Assert.IsTrue(target.IsEnergized, "TargetReceiver must be energized.");
+            Assert.IsTrue(validator.IsSolved, "Chamber 02 must be marked solved.");
+        }
+
+        [UnityTest]
+        public IEnumerator Test13_Chamber03_PrismSplit_DualTargetsEnergizedSimultaneously()
+        {
+            LevelManager levelManager = Object.FindFirstObjectByType<LevelManager>();
+            BeamSystem beamSystem = Object.FindFirstObjectByType<BeamSystem>();
+            BeamValidator validator = Object.FindFirstObjectByType<BeamValidator>();
+            EnergySource source = Object.FindFirstObjectByType<EnergySource>();
+
+            levelManager.LoadLevel(2, true); // Force unlock Chamber 03
+            yield return null;
+
+            Assert.AreEqual("Chamber 03: Prism Bifurcation", levelManager.CurrentLevel.levelTitle);
+            Assert.IsTrue(levelManager.CurrentLevel.useDualTargets, "Chamber 03 must use dual targets.");
+
+            PuzzleNode[] nodes = Object.FindObjectsByType<PuzzleNode>(FindObjectsSortMode.None);
+            Assert.IsTrue(nodes.Length >= 2);
+
+            PuzzleNode nodeAlpha = System.Array.Find(nodes, n => n.name.Contains("Alpha")) ?? nodes[0];
+            PuzzleNode nodeBeta = System.Array.Find(nodes, n => n.name.Contains("Beta")) ?? nodes[1];
+
+            // 1. Source at (-3.5, 0.5, -3.0) aiming +Z
+            source.transform.position = new Vector3(-3.5f, 0.5f, -3.0f);
+            source.transform.forward = Vector3.forward;
+
+            // 2. Node Alpha: PrismSplit at (-3.5, 0.5, 0.0), facing +Z (rotation 0)
+            nodeAlpha.transform.position = new Vector3(-3.5f, 0.5f, 0.0f);
+            nodeAlpha.transform.rotation = Quaternion.Euler(0, 0f, 0);
+            nodeAlpha.SetRedirectType(NodeRedirectType.PrismSplit);
+
+            // 3. Node Beta: Diverter at (3.5, 0.5, 0.0), facing +Z (rotation 0)
+            nodeBeta.transform.position = new Vector3(3.5f, 0.5f, 0.0f);
+            nodeBeta.transform.rotation = Quaternion.Euler(0, 0f, 0);
+
+            beamSystem.RecalculateBeam();
+            yield return null;
+
+            Assert.IsTrue(beamSystem.CurrentPath.Branches.Count >= 1, "Prism node must create secondary beam branch.");
+            Assert.AreEqual(2, beamSystem.CurrentPath.HitTargets.Count, "Both Target 1 and Target 2 must be hit simultaneously.");
+            Assert.IsTrue(validator.IsSolved, "Chamber 03 must be marked solved when both targets are energized.");
+            Assert.AreEqual("ALL TARGETS ENERGIZED", validator.StatusMessage, "Status must confirm all targets energized.");
+        }
+
+        [UnityTest]
+        public IEnumerator Test14_LevelProgression_UnlockedOnSolve_AndRestrictedWhenLocked()
+        {
+            LevelManager levelManager = Object.FindFirstObjectByType<LevelManager>();
+            levelManager.LoadLevel(0, false);
+            yield return null;
+
+            Assert.AreEqual(0, levelManager.CurrentLevelIndex);
+
+            // Verify Chamber 02 is locked initially if unlockedLevelIndex is 0
+            if (levelManager.UnlockedLevelIndex == 0)
+            {
+                levelManager.LoadLevel(1, false);
+                yield return null;
+                Assert.AreEqual(0, levelManager.CurrentLevelIndex, "Locked Chamber 02 must not load without being unlocked.");
+            }
+
+            // Unlocking Chamber 02 via NextLevel when allowed
+            levelManager.LoadLevel(1, true);
+            yield return null;
+            Assert.AreEqual(1, levelManager.CurrentLevelIndex, "Chamber 02 must load when unlocked.");
+
+            // Previous level navigation
+            levelManager.PreviousLevel();
+            yield return null;
+            Assert.AreEqual(0, levelManager.CurrentLevelIndex, "PreviousLevel should navigate back to Chamber 01.");
+        }
+
+        [UnityTest]
+        public IEnumerator Test15_TutorialManager_AdvancesStepsAndToggles()
+        {
+            TutorialManager tutMgr = Object.FindFirstObjectByType<TutorialManager>();
+            Assert.IsNotNull(tutMgr, "TutorialManager should be present in scene.");
+
+            tutMgr.SetStep(TutorialStep.SelectNode);
+            Assert.AreEqual(TutorialStep.SelectNode, tutMgr.CurrentStep);
+
+            tutMgr.NextStep();
+            Assert.AreEqual(TutorialStep.MoveNode, tutMgr.CurrentStep);
+
+            tutMgr.NextStep();
+            Assert.AreEqual(TutorialStep.RotateNode, tutMgr.CurrentStep);
+
+            tutMgr.PreviousStep();
+            Assert.AreEqual(TutorialStep.MoveNode, tutMgr.CurrentStep);
+
+            bool wasActive = tutMgr.IsActive;
+            tutMgr.ToggleTutorial();
+            Assert.AreEqual(!wasActive, tutMgr.IsActive, "ToggleTutorial should flip active state.");
+            tutMgr.SetTutorialActive(true);
+            yield return null;
         }
     }
 }

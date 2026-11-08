@@ -81,6 +81,15 @@ namespace LumenLoom.Puzzle
             SetEnergized(false);
         }
 
+        private void Update()
+        {
+            if (_isEnergized && targetGlowLight != null)
+            {
+                float pulse = Mathf.Sin(Time.time * 4.0f) * 0.6f;
+                targetGlowLight.intensity = glowIntensityActive + pulse;
+            }
+        }
+
         private void UpdateVisuals()
         {
             if (receiverRenderer == null) return;

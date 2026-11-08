@@ -125,6 +125,11 @@ namespace LumenLoom.Interaction
 
             _activeNode.RotateNode(deltaDegrees);
 
+            if (audioManager != null)
+            {
+                audioManager.PlayRotationTickSound();
+            }
+
             if (beamSystem != null)
             {
                 beamSystem.RecalculateBeam();

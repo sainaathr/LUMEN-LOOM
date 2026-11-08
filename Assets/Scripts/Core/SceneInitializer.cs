@@ -110,12 +110,26 @@ namespace LumenLoom.Core
                 controller.SetInputProvider(mouseInput);
             }
 
-            // 9. Ensure UI Manager
+            // 9. Ensure UI Manager & Tutorial Manager
             UIManager uiMgr = FindFirstObjectByType<UIManager>();
             if (uiMgr == null)
             {
                 GameObject uiObj = new GameObject("[UI_Manager]");
                 uiMgr = uiObj.AddComponent<UIManager>();
+            }
+
+            LevelManager levelMgr = FindFirstObjectByType<LevelManager>();
+            if (levelMgr == null)
+            {
+                GameObject lvlObj = new GameObject("[Level_Manager]");
+                levelMgr = lvlObj.AddComponent<LevelManager>();
+            }
+
+            TutorialManager tutMgr = FindFirstObjectByType<TutorialManager>();
+            if (tutMgr == null)
+            {
+                GameObject tutObj = new GameObject("[Tutorial_Manager]");
+                tutMgr = tutObj.AddComponent<TutorialManager>();
             }
 
             // 10. Wire references
@@ -317,6 +331,7 @@ namespace LumenLoom.Core
             col.radius = 0.55f;
 
             PuzzleNode nodeComp = nodeObj.AddComponent<PuzzleNode>();
+            nodeComp.SetDirectionIndicator(pointer.transform);
             return nodeComp;
         }
 

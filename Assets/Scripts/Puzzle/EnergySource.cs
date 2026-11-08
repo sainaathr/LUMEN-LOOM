@@ -30,6 +30,11 @@ namespace LumenLoom.Puzzle
             {
                 rotatingRing.Rotate(Vector3.up, rotationSpeed * Time.deltaTime, Space.Self);
             }
+
+            if (emitterLight != null && isActive)
+            {
+                emitterLight.intensity = 2.0f + 0.35f * Mathf.Sin(Time.time * 3.5f);
+            }
         }
 
         public void SetActive(bool active)

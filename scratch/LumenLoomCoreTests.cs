@@ -41,23 +41,46 @@ namespace LumenLoom.Tests
         public override string ToString() { return string.Format("({0:F2}, {1:F2}, {2:F2})", x, y, z); }
     }
 
+    public enum MockRedirectType
+    {
+        OrientationForward,
+        MirrorReflection,
+        PrismSplit
+    }
+
     public class MockNode
     {
         public string Id;
         public Vector3 Position;
         public Vector3 Forward;
+        public MockRedirectType RedirectType;
         public bool IsConducting;
 
-        public MockNode(string id, Vector3 pos, Vector3 fwd)
+        public MockNode(string id, Vector3 pos, Vector3 fwd, MockRedirectType redirectType = MockRedirectType.OrientationForward)
         {
             Id = id;
             Position = pos;
             Forward = fwd.normalized;
+            RedirectType = redirectType;
         }
 
         public Vector3 CalculateOutputDirection(Vector3 incomingDir)
         {
-            return Forward;
+            if (RedirectType == MockRedirectType.OrientationForward || RedirectType == MockRedirectType.PrismSplit)
+            {
+                return Forward;
+            }
+            return Vector3.Reflect(incomingDir, Forward).normalized;
+        }
+
+        public Vector3 CalculateSecondaryOutputDirection()
+        {
+            if (RedirectType == MockRedirectType.PrismSplit)
+            {
+                // Orthogonal right branch: rotate forward 90 deg clockwise around Y
+                return new Vector3(Forward.z, 0, -Forward.x).normalized;
+            }
+            return Vector3.zero;
         }
 
         public void MoveToClamped(Vector3 target, float minX, float maxX, float minZ, float maxZ)
@@ -78,6 +101,39 @@ namespace LumenLoom.Tests
         }
     }
 
+    public class MockObstacle
+    {
+        public Vector3 Center;
+        public Vector3 Size;
+        public bool HitDetected;
+
+        public MockObstacle(Vector3 center, Vector3 size)
+        {
+            Center = center;
+            Size = size;
+        }
+
+        public bool IntersectsRaySegment(Vector3 p1, Vector3 p2)
+        {
+            // Simple bounding box intersection check for segment on Y=0.5 plane
+            float minX = Center.x - Size.x * 0.5f;
+            float maxX = Center.x + Size.x * 0.5f;
+            float minZ = Center.z - Size.z * 0.5f;
+            float maxZ = Center.z + Size.z * 0.5f;
+
+            // Check if line from p1 to p2 intersects [minX, maxX] x [minZ, maxZ]
+            float segMinX = Math.Min(p1.x, p2.x);
+            float segMaxX = Math.Max(p1.x, p2.x);
+            float segMinZ = Math.Min(p1.z, p2.z);
+            float segMaxZ = Math.Max(p1.z, p2.z);
+
+            if (segMaxX < minX || segMinX > maxX || segMaxZ < minZ || segMinZ > maxZ)
+                return false;
+
+            return true;
+        }
+    }
+
     public class MockTarget
     {
         public Vector3 Position;
@@ -85,7 +141,7 @@ namespace LumenLoom.Tests
         public float AcceptanceAngleDeg;
         public bool IsEnergized;
 
-        public MockTarget(Vector3 pos, Vector3 fwd, float angleDeg)
+        public MockTarget(Vector3 pos, Vector3 fwd, float angleDeg = 90f)
         {
             Position = pos;
             Forward = fwd.normalized;
@@ -119,6 +175,10 @@ namespace LumenLoom.Tests
             Test_TargetAcceptanceAngle();
             Test_InfiniteLoopDetection();
             Test_EndToEndPuzzleSolvePath();
+            Test_ObstacleBlocking();
+            Test_Chamber02_ObstacleDetourSolve();
+            Test_PrismBifurcation_DualBeamSplit();
+            Test_Chamber03_DualTargetSimultaneousSolve();
 
             Console.WriteLine("--------------------------------------------------");
             Console.WriteLine(string.Format("RESULTS: {0} / {1} TESTS PASSED.", _testsPassed, _testsRun));
@@ -160,8 +220,8 @@ namespace LumenLoom.Tests
 
         private static void Test_SpecularReflection()
         {
-            Vector3 inDir = new Vector3(1, 0, 0); // Moving +X
-            Vector3 normal = new Vector3(-1, 0, 1).normalized; // 45 degree mirror surface
+            Vector3 inDir = new Vector3(1, 0, 0);
+            Vector3 normal = new Vector3(-1, 0, 1).normalized;
             Vector3 reflected = Vector3.Reflect(inDir, normal).normalized;
 
             Assert(Math.Abs(reflected.z - 1.0f) < 1e-3f && Math.Abs(reflected.x) < 1e-3f,
@@ -179,8 +239,8 @@ namespace LumenLoom.Tests
 
         private static void Test_NodeRotation()
         {
-            MockNode node = new MockNode("N_Rot", new Vector3(0, 0.5f, 0), Vector3.forward); // Facing +Z
-            node.RotateDegreesY(90f); // Rotate 90 deg clockwise around Y -> should face +X
+            MockNode node = new MockNode("N_Rot", new Vector3(0, 0.5f, 0), Vector3.forward);
+            node.RotateDegreesY(90f);
 
             Assert(Math.Abs(node.Forward.x - 1.0f) < 1e-3f && Math.Abs(node.Forward.z) < 1e-3f,
                 "Node Rotation Test: Rotating 90 degrees around Y aligns node precisely with +X axis.", "");
@@ -188,7 +248,7 @@ namespace LumenLoom.Tests
 
         private static void Test_TargetAcceptanceAngle()
         {
-            MockTarget target = new MockTarget(new Vector3(0, 0, 5), Vector3.back, 90f); // Faces -Z
+            MockTarget target = new MockTarget(new Vector3(0, 0, 5), Vector3.back, 90f);
 
             bool hitHeadOn = target.ValidateHit(Vector3.forward);
             bool hitPerpendicular = target.ValidateHit(Vector3.right);
@@ -246,6 +306,75 @@ namespace LumenLoom.Tests
 
             Assert(reachedNode1 && reachedNode2 && targetHit && targetEnergized,
                 "End-to-End Chamber 01 Solve Test: Light travels Source -> Node 1 -> Node 2 -> Target Receiver successfully.", "");
+        }
+
+        private static void Test_ObstacleBlocking()
+        {
+            Vector3 sourcePos = new Vector3(0, 0.5f, -3.0f);
+            Vector3 targetPos = new Vector3(0, 0.5f, 3.0f);
+            MockObstacle obstacle = new MockObstacle(new Vector3(0, 0.5f, 0), new Vector3(3.5f, 1.2f, 0.8f));
+
+            bool blocked = obstacle.IntersectsRaySegment(sourcePos, targetPos);
+            Assert(blocked,
+                "Obstacle Collision Test: Direct ray path is intercepted and blocked by central barrier.", "");
+        }
+
+        private static void Test_Chamber02_ObstacleDetourSolve()
+        {
+            Vector3 sourcePos = new Vector3(-3.5f, 0.5f, -3.0f);
+            MockObstacle obstacle = new MockObstacle(new Vector3(0, 0.5f, 0), new Vector3(3.5f, 1.2f, 0.8f));
+            MockTarget target = new MockTarget(new Vector3(3.5f, 0.5f, -3.0f), Vector3.forward);
+
+            // Detour routing: Node Alpha at (-3.5, 2.5), Node Beta at (3.5, 2.5)
+            MockNode nodeAlpha = new MockNode("Alpha", new Vector3(-3.5f, 0.5f, 2.5f), Vector3.right);
+            MockNode nodeBeta = new MockNode("Beta", new Vector3(3.5f, 0.5f, 2.5f), Vector3.back);
+
+            // Segment 1: Source to Node Alpha (travels along -3.5 from Z=-3 to Z=2.5, obstacle is at X=0, size 3.5 -> X in [-1.75, 1.75], so X=-3.5 clears it!)
+            bool seg1Blocked = obstacle.IntersectsRaySegment(sourcePos, nodeAlpha.Position);
+            // Segment 2: Alpha to Beta (travels along Z=2.5 from X=-3.5 to X=3.5, obstacle Z in [-0.4, 0.4], so Z=2.5 clears it!)
+            bool seg2Blocked = obstacle.IntersectsRaySegment(nodeAlpha.Position, nodeBeta.Position);
+            // Segment 3: Beta to Target (travels along X=3.5 from Z=2.5 to Z=-3, obstacle X in [-1.75, 1.75], so X=3.5 clears it!)
+            bool seg3Blocked = obstacle.IntersectsRaySegment(nodeBeta.Position, target.Position);
+
+            bool targetHit = target.ValidateHit(Vector3.back); // beam moves along -Z into target facing +Z
+
+            Assert(!seg1Blocked && !seg2Blocked && !seg3Blocked && targetHit,
+                "Chamber 02 Detour Solve Test: Beam successfully detours around obstacle into receiver.", "");
+        }
+
+        private static void Test_PrismBifurcation_DualBeamSplit()
+        {
+            MockNode prism = new MockNode("Prism", new Vector3(0, 0.5f, 0), Vector3.forward, MockRedirectType.PrismSplit);
+            Vector3 primaryOut = prism.CalculateOutputDirection(Vector3.forward);
+            Vector3 secondaryOut = prism.CalculateSecondaryOutputDirection();
+
+            bool primaryForward = (Math.Abs(primaryOut.z - 1.0f) < 1e-4f);
+            bool secondaryOrthogonal = (Math.Abs(Vector3.Dot(primaryOut, secondaryOut)) < 1e-4f && secondaryOut.magnitude > 0.99f);
+
+            Assert(primaryForward && secondaryOrthogonal,
+                "Prism Bifurcation Test: Prism creates forward primary beam and orthogonal secondary beam.", "");
+        }
+
+        private static void Test_Chamber03_DualTargetSimultaneousSolve()
+        {
+            Vector3 sourcePos = new Vector3(-3.5f, 0.5f, -3.0f);
+            MockNode prism = new MockNode("Prism", new Vector3(-3.5f, 0.5f, 0.0f), Vector3.forward, MockRedirectType.PrismSplit);
+            MockTarget target1 = new MockTarget(new Vector3(-3.5f, 0.5f, 3.5f), Vector3.back);
+
+            MockNode diverter = new MockNode("Diverter", new Vector3(3.5f, 0.5f, 0.0f), Vector3.forward);
+            MockTarget target2 = new MockTarget(new Vector3(3.5f, 0.5f, 3.5f), Vector3.back);
+
+            // Primary branch: Source -> Prism -> Target 1
+            Vector3 primDir = prism.CalculateOutputDirection(Vector3.forward);
+            bool t1Hit = target1.ValidateHit(primDir);
+
+            // Secondary branch: Prism -> Diverter -> Target 2
+            Vector3 secDir = prism.CalculateSecondaryOutputDirection();
+            Vector3 divOut = diverter.CalculateOutputDirection(secDir);
+            bool t2Hit = target2.ValidateHit(divOut);
+
+            Assert(t1Hit && t2Hit,
+                "Chamber 03 Dual Target Solve Test: Both Target 1 and Target 2 are energized simultaneously.", "");
         }
     }
 }

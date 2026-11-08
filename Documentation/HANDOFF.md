@@ -1,7 +1,7 @@
 # LUMEN LOOM — Teammate Handoff & Setup Guide
 
 **Welcome to LUMEN LOOM!**  
-Day 1 development has delivered a fully verified, clean, zero-error playable prototype in Unity 6 LTS (`6000.0.32f1`). All core systems, beam raycasting, node clamping, rotation, solving, resetting, and UI HUD have been tested and verified (20/20 automated tests passing).
+Day 2 development has expanded the project into a multi-chamber optical puzzle game in Unity 6 LTS (`6000.0.32f1`). All core systems, multi-branch beam raycasting, prism splitting, obstacle barriers, level unlocking, tutorial guide, solving, resetting, and UI HUD have been tested and verified (29/29 automated tests passing).
 
 ---
 
@@ -24,7 +24,9 @@ Day 1 development has delivered a fully verified, clean, zero-error playable pro
    - **Q / E Keys / Scroll Wheel:** Rotate selected node to aim its beam.
    - **R Key:** Reset puzzle chamber.
    - **Escape:** Deselect current node.
-5. Align Node Alpha to shoot Right ($+X$) and Node Beta to shoot Forward ($+Z$) into the Target Receiver to observe the solve sequence!
+   - **NEXT >> / << PREV:** Navigate between unlocked chambers.
+   - **GUIDE / HELP [?]:** View step-by-step holographic instructions.
+5. Solve Chamber 01, navigate around the obstacle in Chamber 02, and split rays via the optical prism in Chamber 03!
 
 ---
 
@@ -57,12 +59,10 @@ Our game architecture was built specifically for this step! The gameplay layer d
 
 Run the full automated test suite anytime using Unity batchmode:
 ```powershell
-# PlayMode Integration Test Suite (10 gameplay tests)
-& "D:\Unity\Editors\6000.0.32f1\Editor\Unity.com" -batchmode -runTests -projectPath "D:\Unity\Projects\LUMEN LOOM" -testPlatform PlayMode -testResults "D:\Unity\Projects\LUMEN LOOM\Logs\PlayModeResults.xml" -logFile "D:\Unity\Projects\LUMEN LOOM\Logs\PlayModeTestRun.log"
+# PlayMode Integration Test Suite (18 gameplay tests)
+& "D:\Unity\Editors\6000.0.32f1\Editor\Unity.com" -batchmode -runTests -projectPath "D:\Unity\Projects\LUMEN LOOM" -testPlatform PlayMode -testResults "Logs\PlayModeResults.xml" -logFile "Logs\PlayModeRun.log"
 
-# EditMode Unit Tests (3 tests)
-& "D:\Unity\Editors\6000.0.32f1\Editor\Unity.com" -batchmode -runTests -projectPath "D:\Unity\Projects\LUMEN LOOM" -testPlatform EditMode -testResults "D:\Unity\Projects\LUMEN LOOM\Logs\EditModeResults.xml" -logFile "D:\Unity\Projects\LUMEN LOOM\Logs\TestRun.log"
-
-# Standalone C# Math Suite (7 algorithmic tests)
-& "scratch/LumenLoomCoreTests.exe"
+# Standalone Core Mathematical Test Suite (11 tests)
+& ".\scratch\LumenLoomCoreTests.exe"
 ```
+Both test suites currently achieve **100% pass rates (29 / 29 tests passed)**.

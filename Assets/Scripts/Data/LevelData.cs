@@ -46,6 +46,11 @@ namespace LumenLoom.Data
         public Vector3 targetForward = Vector3.back;
         public int minNodesRequired = 2;
 
+        [Header("Secondary Target (Optional / Chamber 03)")]
+        public bool useDualTargets = false;
+        public Vector3 target2Position = new Vector3(3.0f, 0.5f, 3.0f);
+        public Vector3 target2Forward = Vector3.back;
+
         [Header("Nodes Layout")]
         public List<NodeSpawnConfig> initialNodes = new List<NodeSpawnConfig>();
 

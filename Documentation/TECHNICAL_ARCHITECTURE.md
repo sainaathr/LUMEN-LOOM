@@ -103,22 +103,36 @@ The beam system (`BeamSystem.cs`) executes an optical ray-marching pass without 
    Calculated according to the law of reflection:
    $$\vec{d}_{out} = \vec{d}_{in} - 2(\vec{d}_{in} \cdot \vec{n})\vec{n}$$
    where $\vec{n}$ is the mirror surface normal.
+3. **`PrismSplit` (Bifurcating Optical Element):**  
+   Splits incoming light into two real deterministic outputs:
+   - Primary branch: $\vec{d}_{primary} = \text{node.transform.forward}$
+   - Secondary branch: $\vec{d}_{secondary} = \text{node.transform.right}$ (orthogonal 90° clockwise)
+   Both branches are traced simultaneously by `BeamSystem.cs` and rendered via pooled line renderers in `BeamRenderer.cs`.
 
 ---
 
-## 4. Puzzle Validation & Chamber Progression
+## 4. Multi-Target Validation & Chamber Progression
 
-The `BeamValidator.cs` and `PuzzleManager.cs` components manage game state progression:
+The `BeamValidator.cs`, `LevelManager.cs`, and `PuzzleManager.cs` components manage game state progression:
 
 - **Validation Rules:**
   - `path.HasReachedTarget == true`
-  - `path.VisitedNodes.Count >= minNodesRequired` (ensures player doesn't bypass puzzle via direct line-of-sight if multiple steps are intended)
+  - For single target: `primaryTarget.ValidateHit(...)`
+  - For dual targets (Chamber 03): All targets in `requiredTargets` must be simultaneously energized (`path.HitTargets.Contains(t)`)
+  - `path.VisitedNodes.Count >= minNodesRequired`
   - `path.HasLoopDetected == false`
+  - `path.HitObstacle == false`
 - **Output States:**
-  - `"TARGET CONNECTED"` (Solves chamber, triggers celestial audio chime, green emissive pulse)
+  - `"TARGET CONNECTED"` / `"ALL TARGETS ENERGIZED"` (Solves chamber, triggers chime, unlocks next chamber)
+  - `"TARGETS ENERGIZED: 1/2"` (Partial solve feedback)
   - `"ALIGN THE ENERGY NODES"` (Default unsolved state)
   - `"BEAM BLOCKED BY OBSTACLE"` (Informs player of path occlusion)
   - `"ENERGY LOOP DETECTED - REALIGN NODES"` (Warns player of circular resonance)
+
+- **Level Progression (`LevelManager.cs`):**
+  - Linear unlock sequence: Chamber 01 -> Chamber 02 -> Chamber 03.
+  - Progression tracked via `unlockedLevelIndex`.
+  - Dynamic pooling reconfigures chamber source, target, obstacles, and nodes without reloading scene or duplicating managers.
 
 ---
 

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using LumenLoom.Puzzle;
 
@@ -12,6 +13,7 @@ namespace LumenLoom.Rendering
     {
         [Header("Validation Rules")]
         [SerializeField] private TargetReceiver primaryTarget;
+        [SerializeField] private List<TargetReceiver> requiredTargets = new List<TargetReceiver>();
         [SerializeField] private int minNodesRequired = 1;
 
         private bool _isSolved;
@@ -19,6 +21,8 @@ namespace LumenLoom.Rendering
 
         public bool IsSolved => _isSolved;
         public string StatusMessage => _statusMessage;
+        public TargetReceiver PrimaryTarget => primaryTarget;
+        public IReadOnlyList<TargetReceiver> RequiredTargets => requiredTargets;
 
         public event Action OnPuzzleSolved;
         public event Action OnPuzzleUnsolved;
@@ -27,6 +31,27 @@ namespace LumenLoom.Rendering
         public void SetTarget(TargetReceiver target)
         {
             primaryTarget = target;
+            requiredTargets.Clear();
+            if (target != null)
+            {
+                requiredTargets.Add(target);
+            }
+        }
+
+        public void SetRequiredTargets(IEnumerable<TargetReceiver> targets)
+        {
+            requiredTargets.Clear();
+            if (targets != null)
+            {
+                requiredTargets.AddRange(targets);
+            }
+            primaryTarget = requiredTargets.Count > 0 ? requiredTargets[0] : null;
+        }
+
+        public void ClearRequiredTargets()
+        {
+            requiredTargets.Clear();
+            primaryTarget = null;
         }
 
         public void ValidatePath(BeamPath path)
@@ -35,39 +60,78 @@ namespace LumenLoom.Rendering
 
             if (path == null || path.Points.Count < 2)
             {
+                ResetReceiverStates();
                 SetSolved(false, "ENERGY EMISSION INACTIVE");
                 return;
             }
 
             if (path.HasLoopDetected)
             {
+                ResetReceiverStates();
                 SetSolved(false, "ENERGY LOOP DETECTED - REALIGN NODES");
                 return;
             }
 
-            if (path.HasReachedTarget && (primaryTarget == null || path.HitTarget == primaryTarget))
+            // Check if multiple targets required (e.g. Chamber 03 Prism Split)
+            if (requiredTargets != null && requiredTargets.Count > 1)
             {
-                if (path.VisitedNodes.Count >= minNodesRequired)
+                int hitCount = 0;
+                foreach (var req in requiredTargets)
                 {
-                    if (path.HitTarget != null)
+                    if (req != null)
                     {
-                        path.HitTarget.SetEnergized(true);
+                        bool hit = path.HitTargets.Contains(req) || path.HitTarget == req;
+                        req.SetEnergized(hit);
+                        if (hit) hitCount++;
                     }
-                    SetSolved(true, "TARGET CONNECTED");
+                }
+
+                if (hitCount == requiredTargets.Count)
+                {
+                    if (path.VisitedNodes.Count >= minNodesRequired)
+                    {
+                        SetSolved(true, "ALL TARGETS ENERGIZED");
+                        return;
+                    }
+                    else
+                    {
+                        SetSolved(false, $"CONNECT ALL {minNodesRequired} NODES BEFORE TARGETS");
+                        return;
+                    }
+                }
+                else if (hitCount > 0)
+                {
+                    SetSolved(false, $"TARGETS ENERGIZED: {hitCount}/{requiredTargets.Count}");
                     return;
                 }
-                else
+            }
+            else
+            {
+                TargetReceiver targetToCheck = primaryTarget != null 
+                    ? primaryTarget 
+                    : (requiredTargets != null && requiredTargets.Count > 0 ? requiredTargets[0] : null);
+
+                if (path.HasReachedTarget && (targetToCheck == null || path.HitTarget == targetToCheck || path.HitTargets.Contains(targetToCheck)))
                 {
-                    SetSolved(false, $"CONNECT ALL {minNodesRequired} NODES BEFORE TARGET");
-                    return;
+                    if (path.VisitedNodes.Count >= minNodesRequired)
+                    {
+                        if (targetToCheck != null)
+                        {
+                            targetToCheck.SetEnergized(true);
+                        }
+                        SetSolved(true, "TARGET CONNECTED");
+                        return;
+                    }
+                    else
+                    {
+                        SetSolved(false, $"CONNECT ALL {minNodesRequired} NODES BEFORE TARGET");
+                        return;
+                    }
                 }
             }
 
-            // Beam didn't reach target
-            if (primaryTarget != null)
-            {
-                primaryTarget.SetEnergized(false);
-            }
+            // Beam didn't reach all required targets
+            ResetReceiverStates();
 
             if (path.HitObstacle)
             {
@@ -76,6 +140,24 @@ namespace LumenLoom.Rendering
             else
             {
                 SetSolved(false, "ALIGN THE ENERGY NODES");
+            }
+        }
+
+        private void ResetReceiverStates()
+        {
+            if (primaryTarget != null)
+            {
+                primaryTarget.SetEnergized(false);
+            }
+            if (requiredTargets != null)
+            {
+                for (int i = 0; i < requiredTargets.Count; i++)
+                {
+                    if (requiredTargets[i] != null)
+                    {
+                        requiredTargets[i].SetEnergized(false);
+                    }
+                }
             }
         }
 
@@ -102,10 +184,7 @@ namespace LumenLoom.Rendering
         {
             _isSolved = false;
             _statusMessage = "ALIGN THE ENERGY NODES";
-            if (primaryTarget != null)
-            {
-                primaryTarget.ResetReceiver();
-            }
+            ResetReceiverStates();
             OnStatusMessageChanged?.Invoke(_statusMessage);
             OnPuzzleUnsolved?.Invoke();
         }

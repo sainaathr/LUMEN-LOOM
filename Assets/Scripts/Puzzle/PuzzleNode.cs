@@ -6,7 +6,8 @@ namespace LumenLoom.Puzzle
     public enum NodeRedirectType
     {
         OrientationForward, // Beam enters and fires strictly along node's transform.forward
-        MirrorReflection    // Beam bounces specularly off the node's forward surface normal
+        MirrorReflection,   // Beam bounces specularly off the node's forward surface normal
+        PrismSplit          // Splits incoming beam into forward and orthogonal right branches
     }
 
     /// <summary>
@@ -43,9 +44,11 @@ namespace LumenLoom.Puzzle
         // Internal State
         private Vector3 _initialPosition;
         private Quaternion _initialRotation;
+        private Vector3 _baseScale;
         private bool _isHovered;
         private bool _isSelected;
         private bool _isConductingBeam;
+        private float _lastRotatePulseTime = -10f;
         private MaterialPropertyBlock _propBlock;
         private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
@@ -54,6 +57,9 @@ namespace LumenLoom.Puzzle
         public NodeRedirectType RedirectType => redirectType;
         public bool IsSelected => _isSelected;
         public bool IsConductingBeam => _isConductingBeam;
+        public Vector2 XBounds => xBounds;
+        public Vector2 ZBounds => zBounds;
+        public float FixedY => fixedY;
 
         public event Action<PuzzleNode> OnTransformUpdated;
 
@@ -67,6 +73,7 @@ namespace LumenLoom.Puzzle
             _propBlock = new MaterialPropertyBlock();
             _initialPosition = transform.position;
             _initialRotation = transform.rotation;
+            _baseScale = transform.localScale;
 
             // Ensure Y coordinate is fixed
             Vector3 pos = transform.position;
@@ -74,6 +81,30 @@ namespace LumenLoom.Puzzle
             transform.position = pos;
 
             UpdateVisuals();
+        }
+
+        private void Update()
+        {
+            if (_isSelected)
+            {
+                // Subtle holographic pulse when actively selected
+                float pulse = 1.0f + 0.05f * Mathf.Sin(Time.time * 6.0f);
+                transform.localScale = _baseScale * pulse;
+            }
+            else if (transform.localScale != _baseScale)
+            {
+                transform.localScale = Vector3.Lerp(transform.localScale, _baseScale, Time.deltaTime * 12.0f);
+            }
+        }
+
+        public void SetRedirectType(NodeRedirectType type)
+        {
+            redirectType = type;
+        }
+
+        public void SetDirectionIndicator(Transform indicator)
+        {
+            directionIndicator = indicator;
         }
 
         /// <summary>
@@ -85,11 +116,11 @@ namespace LumenLoom.Puzzle
         }
 
         /// <summary>
-        /// Calculates redirected beam direction based on incoming hit vector and node configuration.
+        /// Calculates primary redirected beam direction based on incoming hit vector and node configuration.
         /// </summary>
         public Vector3 CalculateOutputDirection(Vector3 incomingDirection, Vector3 hitNormal)
         {
-            if (redirectType == NodeRedirectType.OrientationForward)
+            if (redirectType == NodeRedirectType.OrientationForward || redirectType == NodeRedirectType.PrismSplit)
             {
                 return transform.forward;
             }
@@ -98,6 +129,19 @@ namespace LumenLoom.Puzzle
                 Vector3 normal = transform.forward; // Face normal
                 return Vector3.Reflect(incomingDirection, normal).normalized;
             }
+        }
+
+        /// <summary>
+        /// Calculates secondary output beam for bifurcating optical elements (e.g. PrismSplit).
+        /// </summary>
+        public Vector3 CalculateSecondaryOutputDirection(Vector3 incomingDirection, Vector3 hitNormal)
+        {
+            if (redirectType == NodeRedirectType.PrismSplit)
+            {
+                // Orthogonal right output branch
+                return transform.right;
+            }
+            return Vector3.zero;
         }
 
         public void SetHovered(bool hovered)
@@ -154,6 +198,7 @@ namespace LumenLoom.Puzzle
         {
             transform.position = _initialPosition;
             transform.rotation = _initialRotation;
+            transform.localScale = _baseScale;
             _isHovered = false;
             _isSelected = false;
             _isConductingBeam = false;

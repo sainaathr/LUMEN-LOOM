@@ -38,11 +38,17 @@ namespace LumenLoom.Puzzle
 
         private void Awake()
         {
-            if (puzzleNodes == null || puzzleNodes.Count == 0)
-            {
-                puzzleNodes = new List<PuzzleNode>(FindObjectsByType<PuzzleNode>(FindObjectsSortMode.None));
-            }
+            FindSceneEntities();
+        }
 
+        public void FindSceneEntities()
+        {
+            if (energySource == null) energySource = FindFirstObjectByType<EnergySource>();
+            if (targetReceiver == null) targetReceiver = FindFirstObjectByType<TargetReceiver>();
+            puzzleNodes = new List<PuzzleNode>(FindObjectsByType<PuzzleNode>(FindObjectsSortMode.None));
+            if (beamSystem == null) beamSystem = FindFirstObjectByType<BeamSystem>();
+            if (beamValidator == null) beamValidator = FindFirstObjectByType<BeamValidator>();
+            if (audioManager == null) audioManager = FindFirstObjectByType<AudioFeedbackManager>();
             ConfigureNodeBoundaries();
         }
 

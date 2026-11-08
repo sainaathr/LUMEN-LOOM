@@ -15,6 +15,8 @@ namespace LumenLoom.Audio
         [SerializeField] private AudioClip releaseClip;
         [SerializeField] private AudioClip targetConnectedClip;
         [SerializeField] private AudioClip resetClip;
+        [SerializeField] private AudioClip rotateTickClip;
+        [SerializeField] private AudioClip obstacleBlockedClip;
 
         [Header("Audio Settings")]
         [SerializeField] [Range(0f, 1f)] private float masterVolume = 0.7f;
@@ -25,6 +27,8 @@ namespace LumenLoom.Audio
         private AudioClip _procReleaseClip;
         private AudioClip _procConnectedClip;
         private AudioClip _procResetClip;
+        private AudioClip _procRotateTickClip;
+        private AudioClip _procObstacleBlockedClip;
 
         private void Awake()
         {
@@ -62,6 +66,18 @@ namespace LumenLoom.Audio
             PlayClipOneShot(clip, 0.5f);
         }
 
+        public void PlayRotationTickSound()
+        {
+            AudioClip clip = rotateTickClip != null ? rotateTickClip : _procRotateTickClip;
+            PlayClipOneShot(clip, 0.25f);
+        }
+
+        public void PlayObstacleBlockedSound()
+        {
+            AudioClip clip = obstacleBlockedClip != null ? obstacleBlockedClip : _procObstacleBlockedClip;
+            PlayClipOneShot(clip, 0.45f);
+        }
+
         private void PlayClipOneShot(AudioClip clip, float volumeScale)
         {
             if (clip != null && _audioSource != null)
@@ -79,6 +95,8 @@ namespace LumenLoom.Audio
             _procReleaseClip = SynthesizeTone(520f, 330f, 0.07f, WaveType.Sine);
             _procConnectedClip = SynthesizeChord(new float[] { 523.25f, 659.25f, 783.99f, 1046.50f }, 0.6f); // C Major celestial chime
             _procResetClip = SynthesizeTone(300f, 150f, 0.2f, WaveType.Triangle);
+            _procRotateTickClip = SynthesizeTone(880f, 1100f, 0.035f, WaveType.Sine);
+            _procObstacleBlockedClip = SynthesizeTone(180f, 90f, 0.15f, WaveType.Triangle);
         }
 
         private enum WaveType { Sine, Triangle }

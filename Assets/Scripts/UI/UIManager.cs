@@ -141,25 +141,54 @@ namespace LumenLoom.UI
             Color prevBg = GUI.backgroundColor;
             GUI.backgroundColor = _isSolved ? new Color(0.1f, 0.8f, 0.4f, 0.9f) : new Color(0.05f, 0.15f, 0.25f, 0.9f);
 
-            GUILayout.BeginArea(new Rect(Screen.width * 0.5f - 250, 15, 500, 70), GUI.skin.box);
-            GUILayout.Label("LUMEN LOOM — PROTOCOL CHAMBER", GUI.skin.label);
+            GUILayout.BeginArea(new Rect(Screen.width * 0.5f - 260, 10, 520, 80), GUI.skin.box);
+            string chamberHeader = "LUMEN LOOM — PROTOCOL CHAMBER";
+            if (levelManager != null && levelManager.CurrentLevel != null)
+            {
+                chamberHeader = $"{levelManager.CurrentLevel.levelTitle.ToUpper()} ({levelManager.CurrentLevelIndex + 1}/{levelManager.TotalLevels})";
+            }
+            GUILayout.Label(chamberHeader, GUI.skin.label);
             GUILayout.Label(_currentStatus, bannerStyle);
             GUILayout.EndArea();
 
-            // Controls instruction card at bottom
-            GUI.backgroundColor = new Color(0.05f, 0.08f, 0.12f, 0.85f);
-            GUILayout.BeginArea(new Rect(20, Screen.height - 75, 520, 60), GUI.skin.box);
-            GUIStyle boldHeaderStyle = new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold };
-            GUILayout.Label("CONTROLS & SHORTCUTS:", boldHeaderStyle);
-            GUILayout.Label("Left Click: Select/Drag | Q/E or Scroll: Rotate | R: Reset Chamber | Esc: Deselect");
-            GUILayout.EndArea();
-
-            // Reset button at top right
-            if (GUI.Button(new Rect(Screen.width - 130, 20, 110, 40), "RESET (R)"))
+            // Chamber navigation controls (top right)
+            if (levelManager != null && levelManager.TotalLevels > 1)
             {
-                if (puzzleManager != null)
+                int btnWidth = 90;
+                int btnHeight = 35;
+                int startX = Screen.width - 320;
+                int topY = 15;
+
+                GUI.enabled = levelManager.CurrentLevelIndex > 0;
+                if (GUI.Button(new Rect(startX, topY, btnWidth, btnHeight), "<< PREV"))
                 {
-                    puzzleManager.ResetPuzzle();
+                    levelManager.PreviousLevel();
+                }
+
+                GUI.enabled = levelManager.HasNextLevel && levelManager.IsLevelUnlocked(levelManager.CurrentLevelIndex + 1);
+                if (GUI.Button(new Rect(startX + btnWidth + 10, topY, btnWidth, btnHeight), "NEXT >>"))
+                {
+                    levelManager.NextLevel();
+                }
+
+                GUI.enabled = true;
+                if (GUI.Button(new Rect(startX + (btnWidth + 10) * 2, topY, btnWidth, btnHeight), "RESET (R)"))
+                {
+                    if (puzzleManager != null)
+                    {
+                        puzzleManager.ResetPuzzle();
+                    }
+                }
+            }
+            else
+            {
+                // Reset button at top right
+                if (GUI.Button(new Rect(Screen.width - 130, 20, 110, 40), "RESET (R)"))
+                {
+                    if (puzzleManager != null)
+                    {
+                        puzzleManager.ResetPuzzle();
+                    }
                 }
             }
 

@@ -6,6 +6,18 @@ using LumenLoom.Puzzle;
 namespace LumenLoom.Rendering
 {
     /// <summary>
+    /// Represents an optical branch (such as a split from a prism).
+    /// </summary>
+    public class BeamBranch
+    {
+        public readonly List<Vector3> Points = new List<Vector3>(16);
+        public TargetReceiver HitTarget;
+        public bool HasReachedTarget;
+        public bool HasLoopDetected;
+        public bool HitObstacle;
+    }
+
+    /// <summary>
     /// Represents the full calculated path of an energy beam.
     /// </summary>
     public class BeamPath
@@ -16,6 +28,10 @@ namespace LumenLoom.Rendering
         public bool HasReachedTarget;
         public bool HasLoopDetected;
         public bool HitObstacle;
+
+        // Multi-branch optical support (e.g. PrismSplit)
+        public readonly List<BeamBranch> Branches = new List<BeamBranch>();
+        public readonly List<TargetReceiver> HitTargets = new List<TargetReceiver>();
     }
 
     /// <summary>
@@ -94,6 +110,8 @@ namespace LumenLoom.Rendering
             _currentPath.Points.Clear();
             _currentPath.VisitedNodes.Clear();
             _visitedNodeSet.Clear();
+            _currentPath.Branches.Clear();
+            _currentPath.HitTargets.Clear();
             _currentPath.HitTarget = null;
             _currentPath.HasReachedTarget = false;
             _currentPath.HasLoopDetected = false;
@@ -144,6 +162,10 @@ namespace LumenLoom.Rendering
                         {
                             _currentPath.HitTarget = target;
                             _currentPath.HasReachedTarget = true;
+                            if (!_currentPath.HitTargets.Contains(target))
+                            {
+                                _currentPath.HitTargets.Add(target);
+                            }
                         }
                         break; // Beam absorbed by target
                     }
@@ -162,7 +184,17 @@ namespace LumenLoom.Rendering
                         _currentPath.VisitedNodes.Add(hitNode);
                         lastEmittingNode = hitNode;
 
-                        // Calculate new origin and direction
+                        // Check for Prism Split: bifurcate secondary branch
+                        if (hitNode.RedirectType == NodeRedirectType.PrismSplit)
+                        {
+                            Vector3 secondaryDir = hitNode.CalculateSecondaryOutputDirection(currentDirection, hit.normal).normalized;
+                            Vector3 secondaryOrigin = hitNode.GetOutputOrigin();
+                            BeamBranch secBranch = new BeamBranch();
+                            TraceBranch(secondaryOrigin, secondaryDir, hitNode, secBranch, maxReflections - bounces);
+                            _currentPath.Branches.Add(secBranch);
+                        }
+
+                        // Calculate new origin and direction for primary beam
                         currentOrigin = hitNode.GetOutputOrigin();
                         currentDirection = hitNode.CalculateOutputDirection(currentDirection, hit.normal).normalized;
                         _currentPath.Points.Add(currentOrigin);
@@ -189,6 +221,16 @@ namespace LumenLoom.Rendering
                 }
             }
 
+            // Sync HitTarget if multiple targets hit
+            if (_currentPath.HitTargets.Count > 0)
+            {
+                _currentPath.HasReachedTarget = true;
+                if (_currentPath.HitTarget == null)
+                {
+                    _currentPath.HitTarget = _currentPath.HitTargets[0];
+                }
+            }
+
             // Update conduction state on all puzzle nodes
             UpdateNodeConductionStates();
 
@@ -205,6 +247,83 @@ namespace LumenLoom.Rendering
             }
 
             OnBeamPathCalculated?.Invoke(_currentPath);
+        }
+
+        private void TraceBranch(Vector3 startOrigin, Vector3 startDirection, PuzzleNode emitterNode, BeamBranch branch, int remainingReflections)
+        {
+            branch.Points.Add(startOrigin);
+            Vector3 currentOrigin = startOrigin;
+            Vector3 currentDirection = startDirection;
+            PuzzleNode lastEmittingNode = emitterNode;
+            int bounces = 0;
+
+            while (bounces < remainingReflections)
+            {
+                bounces++;
+                float currentOffset = lastEmittingNode != null ? 0.6f : rayOriginOffset;
+                Vector3 rayOrigin = currentOrigin + currentDirection * currentOffset;
+
+                if (Physics.Raycast(rayOrigin, currentDirection, out RaycastHit hit, maxBeamRange, collisionLayers))
+                {
+                    PuzzleNode hitNode = hit.collider.GetComponentInParent<PuzzleNode>();
+                    if (hitNode != null && hitNode == lastEmittingNode)
+                    {
+                        continue;
+                    }
+
+                    branch.Points.Add(hit.point);
+
+                    TargetReceiver target = hit.collider.GetComponentInParent<TargetReceiver>();
+                    if (target != null)
+                    {
+                        if (target.ValidateHit(currentDirection))
+                        {
+                            branch.HitTarget = target;
+                            branch.HasReachedTarget = true;
+                            if (!_currentPath.HitTargets.Contains(target))
+                            {
+                                _currentPath.HitTargets.Add(target);
+                            }
+                        }
+                        break;
+                    }
+
+                    if (hitNode != null)
+                    {
+                        if (_visitedNodeSet.Contains(hitNode))
+                        {
+                            branch.HasLoopDetected = true;
+                            _currentPath.HasLoopDetected = true;
+                            break;
+                        }
+
+                        _visitedNodeSet.Add(hitNode);
+                        _currentPath.VisitedNodes.Add(hitNode);
+                        lastEmittingNode = hitNode;
+
+                        currentOrigin = hitNode.GetOutputOrigin();
+                        currentDirection = hitNode.CalculateOutputDirection(currentDirection, hit.normal).normalized;
+                        branch.Points.Add(currentOrigin);
+                        continue;
+                    }
+
+                    Obstacle obstacle = hit.collider.GetComponentInParent<Obstacle>();
+                    if (obstacle != null)
+                    {
+                        obstacle.NotifyBeamHit();
+                        branch.HitObstacle = true;
+                        _currentPath.HitObstacle = true;
+                        break;
+                    }
+
+                    break;
+                }
+                else
+                {
+                    branch.Points.Add(currentOrigin + currentDirection * maxBeamRange);
+                    break;
+                }
+            }
         }
 
         private void UpdateNodeConductionStates()
