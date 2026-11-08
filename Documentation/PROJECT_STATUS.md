@@ -61,6 +61,8 @@ All code compiles with zero errors, and Drive C: has been strictly preserved abo
 | **Unity PlayMode Integration Suite** | 18 | 18 | 0 | **100%** |
 | **Total Automated Tests** | **29** | **29** | **0** | **100%** |
 
+*Note on Test Framework Configuration:* All 18 Unity tests (the 3 synchronous unit tests in `BeamSystemTests.cs` and the 15 integration tests in `SceneIntegrationPlayModeTests.cs`) compile into `LumenLoom.Tests.dll` and execute within Unity's PlayMode runner due to the assembly's multi-platform definition. EditMode batchmode test runner correctly discovers 0 tests because the asmdef does not restrict compilation to `"includePlatforms": ["Editor"]`.
+
 ---
 
 ## 4. Documentation References
