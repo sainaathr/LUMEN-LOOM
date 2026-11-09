@@ -44,5 +44,7 @@ crash*
 *.unitypackage
 
 
+# Android Gradle native build intermediate directory
+/.utmp/
 /[Uu]tmp/
 

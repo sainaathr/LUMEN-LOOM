@@ -51,6 +51,20 @@ namespace LumenLoom.Core.Editor
                 Debug.Log($"[LUMEN LOOM Validation] PASS: 1 Source, 1 Target, {nodes.Length} Interactive Nodes, BeamSystem active!");
             }
         }
+
+        public static void BuildAndSaveSceneWithXR()
+        {
+            var scene = EditorSceneManager.OpenScene("Assets/Scenes/MainPuzzleScene.unity", OpenSceneMode.Single);
+            SceneInitializer initializer = Object.FindFirstObjectByType<SceneInitializer>();
+            if (initializer == null)
+            {
+                GameObject initObj = new GameObject("[Scene_Initializer]");
+                initializer = initObj.AddComponent<SceneInitializer>();
+            }
+            initializer.EnsureChamberBuilt();
+            EditorSceneManager.SaveScene(scene);
+            Debug.Log("[LUMEN LOOM] Scene successfully built with XR Origin & Camera Coexistence and saved!");
+        }
     }
 }
 #endif

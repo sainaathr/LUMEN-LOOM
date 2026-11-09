@@ -87,6 +87,15 @@ namespace LumenLoom.Rendering
                 return;
             }
 
+            if (lineRenderer == null)
+            {
+                lineRenderer = GetComponent<LineRenderer>();
+                if (lineRenderer == null)
+                {
+                    lineRenderer = gameObject.AddComponent<LineRenderer>();
+                }
+            }
+
             lineRenderer.enabled = true;
             lineRenderer.positionCount = path.Points.Count;
 

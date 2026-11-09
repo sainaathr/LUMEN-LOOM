@@ -8,6 +8,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/MainPuzzleScene.unity
     guid: d0000000000000000000000000000001
-  m_configObjects: {}
+  m_configObjects:
+    com.unity.xr.management.loader_settings: {fileID: 11400000, guid: e159407513e7edc47b594e02bb38515b, type: 2}
+    com.unity.xr.openxr.settings4: {fileID: 11400000, guid: ff69eaf9e4724904ea987b5dd6cab2d6, type: 2}
   m_UseUCBPForAssetBundles: 0
-

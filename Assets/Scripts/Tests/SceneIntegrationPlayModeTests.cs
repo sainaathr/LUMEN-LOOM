@@ -508,5 +508,74 @@ namespace LumenLoom.Tests
             // Re-fetch
             Assert.AreEqual(originalPos, nodes[0].transform.position, "ResetPuzzle should restore node to initial chamber spawn position.");
         }
+
+        [UnityTest]
+        public IEnumerator Test18_XRCameraManager_DefaultDesktopMode_EnsuresSingleAudioListenerAndOrbitCamera()
+        {
+            var cameraMgr = Object.FindFirstObjectByType<XRCameraManager>();
+            Assert.IsNotNull(cameraMgr, "XRCameraManager must be present in the scene.");
+
+            // In desktop/batchmode test runner, XR hardware is not active -> Desktop mode
+            Assert.AreEqual(CameraRigMode.Desktop, cameraMgr.ActiveMode, "Default active mode must be Desktop.");
+            Assert.IsNotNull(cameraMgr.DesktopCamera, "DesktopCamera reference must be populated.");
+            Assert.IsTrue(cameraMgr.DesktopCamera.enabled, "Desktop camera must be enabled.");
+            Assert.AreEqual("MainCamera", cameraMgr.DesktopCamera.tag, "Desktop camera must be tagged MainCamera.");
+            Assert.AreEqual(cameraMgr.DesktopCamera, Camera.main, "Camera.main must resolve to Desktop Camera.");
+
+            // Verify exactly ONE active AudioListener exists in scene (no duplicate listener warnings)
+            var activeListeners = Object.FindObjectsByType<AudioListener>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+            Assert.AreEqual(1, activeListeners.Length, "Exactly one AudioListener must be active in Desktop mode.");
+            Assert.AreEqual(cameraMgr.DesktopCamera.gameObject, activeListeners[0].gameObject, "Active AudioListener must belong to Desktop Camera.");
+
+            // Verify input provider is MouseInputProvider
+            var controller = Object.FindFirstObjectByType<NodeInteractionController>();
+            Assert.IsNotNull(controller, "NodeInteractionController must exist.");
+            Assert.IsTrue(controller.InputProvider is MouseInputProvider, "Active input provider must be MouseInputProvider in Desktop mode.");
+
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator Test19_XRCameraManager_ModeSwitching_EnablesXROriginAndPreservesAudioIntegrity()
+        {
+            var cameraMgr = Object.FindFirstObjectByType<XRCameraManager>();
+            Assert.IsNotNull(cameraMgr, "XRCameraManager must be present in the scene.");
+            var controller = Object.FindFirstObjectByType<NodeInteractionController>();
+            Assert.IsNotNull(controller, "NodeInteractionController must exist.");
+
+            // 1. Switch to XR Mode
+            cameraMgr.SetRigMode(CameraRigMode.XR);
+            yield return null;
+
+            Assert.AreEqual(CameraRigMode.XR, cameraMgr.ActiveMode, "ActiveMode must be XR after switching.");
+            Assert.IsNotNull(cameraMgr.XRCamera, "XRCamera reference must be populated.");
+            Assert.IsTrue(cameraMgr.XRCamera.enabled, "XR camera must be enabled.");
+            Assert.AreEqual("MainCamera", cameraMgr.XRCamera.tag, "XR camera must now be tagged MainCamera.");
+            Assert.AreEqual(cameraMgr.XRCamera, Camera.main, "Camera.main must resolve to XR Camera in XR mode.");
+            Assert.IsFalse(cameraMgr.DesktopCamera.enabled, "Desktop camera must be disabled in XR mode.");
+            Assert.AreNotEqual("MainCamera", cameraMgr.DesktopCamera.tag, "Desktop camera must not be tagged MainCamera in XR mode.");
+
+            // Verify exactly ONE active AudioListener exists in XR mode
+            var xrActiveListeners = Object.FindObjectsByType<AudioListener>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+            Assert.AreEqual(1, xrActiveListeners.Length, "Exactly one AudioListener must be active in XR mode.");
+            Assert.AreEqual(cameraMgr.XRCamera.gameObject, xrActiveListeners[0].gameObject, "Active AudioListener must belong to XR Camera.");
+
+            // Verify input provider switched to HandInputProvider
+            Assert.IsTrue(controller.InputProvider is HandInputProvider, "Active input provider must switch to HandInputProvider in XR mode.");
+
+            // 2. Switch back to Desktop Mode
+            cameraMgr.SetRigMode(CameraRigMode.Desktop);
+            yield return null;
+
+            Assert.AreEqual(CameraRigMode.Desktop, cameraMgr.ActiveMode, "ActiveMode must return to Desktop.");
+            Assert.IsTrue(cameraMgr.DesktopCamera.enabled, "Desktop camera must re-enable.");
+            Assert.AreEqual("MainCamera", cameraMgr.DesktopCamera.tag, "Desktop camera tag MainCamera must be restored.");
+            Assert.AreEqual(cameraMgr.DesktopCamera, Camera.main, "Camera.main must resolve to Desktop Camera.");
+
+            var restoredListeners = Object.FindObjectsByType<AudioListener>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+            Assert.AreEqual(1, restoredListeners.Length, "Exactly one AudioListener must remain active after returning to Desktop mode.");
+            Assert.AreEqual(cameraMgr.DesktopCamera.gameObject, restoredListeners[0].gameObject);
+            Assert.IsTrue(controller.InputProvider is MouseInputProvider, "Input provider must revert to MouseInputProvider.");
+        }
     }
 }

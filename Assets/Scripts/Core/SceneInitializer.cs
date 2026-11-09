@@ -1,4 +1,7 @@
 using UnityEngine;
+using Unity.XR.CoreUtils;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.XR;
 using LumenLoom.Puzzle;
 using LumenLoom.Rendering;
 using LumenLoom.Interaction;
@@ -102,6 +105,13 @@ namespace LumenLoom.Core
                 mouseInput = inputObj.AddComponent<MouseInputProvider>();
             }
 
+            HandInputProvider handInput = FindFirstObjectByType<HandInputProvider>();
+            if (handInput == null)
+            {
+                GameObject handObj = new GameObject("[Input_Provider_Hand]");
+                handInput = handObj.AddComponent<HandInputProvider>();
+            }
+
             NodeInteractionController controller = FindFirstObjectByType<NodeInteractionController>();
             if (controller == null)
             {
@@ -109,6 +119,15 @@ namespace LumenLoom.Core
                 controller = ctrlObj.AddComponent<NodeInteractionController>();
                 controller.SetInputProvider(mouseInput);
             }
+
+            // 8b. Ensure Camera Manager & XR Rig Coexistence
+            XRCameraManager cameraMgr = FindFirstObjectByType<XRCameraManager>();
+            if (cameraMgr == null)
+            {
+                GameObject camMgrObj = new GameObject("[XR_Camera_Manager]");
+                cameraMgr = camMgrObj.AddComponent<XRCameraManager>();
+            }
+            cameraMgr.InitializeRig();
 
             // 9. Ensure UI Manager & Tutorial Manager
             UIManager uiMgr = FindFirstObjectByType<UIManager>();
@@ -172,7 +191,7 @@ namespace LumenLoom.Core
                 CreateBoundaryRail(boundary.transform, new Vector3(4.6f, 0.1f, 0), new Vector3(0.2f, 0.2f, 9.4f));
             }
 
-            // Camera setup
+            // Camera setup (Desktop)
             Camera cam = Camera.main;
             if (cam == null)
             {
@@ -184,6 +203,49 @@ namespace LumenLoom.Core
             if (cam.GetComponent<CameraController>() == null)
             {
                 cam.gameObject.AddComponent<CameraController>();
+            }
+
+            // XR Origin Rig setup (Meta Quest OpenXR)
+            XROrigin xrOrigin = FindFirstObjectByType<XROrigin>(FindObjectsInactive.Include);
+            if (xrOrigin == null)
+            {
+                GameObject originObj = new GameObject("[XR_Origin]");
+                originObj.transform.position = new Vector3(0, 0, -3.8f);
+                originObj.transform.rotation = Quaternion.identity;
+
+                GameObject offsetObj = new GameObject("Camera Offset");
+                offsetObj.transform.SetParent(originObj.transform, false);
+                offsetObj.transform.localPosition = new Vector3(0, 1.36144f, 0);
+
+                GameObject xrCamObj = new GameObject("Main XR Camera");
+                xrCamObj.transform.SetParent(offsetObj.transform, false);
+                xrCamObj.transform.localPosition = Vector3.zero;
+                xrCamObj.transform.localRotation = Quaternion.identity;
+
+                Camera xrCam = xrCamObj.AddComponent<Camera>();
+                xrCam.clearFlags = CameraClearFlags.SolidColor;
+                xrCam.backgroundColor = new Color(0.02f, 0.04f, 0.08f, 1f);
+                xrCam.nearClipPlane = 0.1f;
+                xrCam.farClipPlane = 150f;
+                xrCam.cullingMask = ~0;
+
+                AudioListener xrListener = xrCamObj.AddComponent<AudioListener>();
+                xrListener.enabled = false; // disabled initially to prevent duplicate listener warning in desktop mode
+
+                TrackedPoseDriver tpd = xrCamObj.AddComponent<TrackedPoseDriver>();
+                tpd.trackingType = TrackedPoseDriver.TrackingType.RotationAndPosition;
+                tpd.updateType = TrackedPoseDriver.UpdateType.UpdateAndBeforeRender;
+                tpd.ignoreTrackingState = false;
+                tpd.positionInput = new InputActionProperty(new InputAction("Position", binding: "<XRHMD>/centerEyePosition", expectedControlType: "Vector3"));
+                tpd.rotationInput = new InputActionProperty(new InputAction("Rotation", binding: "<XRHMD>/centerEyeRotation", expectedControlType: "Quaternion"));
+                tpd.trackingStateInput = new InputActionProperty(new InputAction("Tracking State", binding: "<XRHMD>/trackingState", expectedControlType: "Integer"));
+
+                xrOrigin = originObj.AddComponent<XROrigin>();
+                xrOrigin.Origin = originObj;
+                xrOrigin.CameraFloorOffsetObject = offsetObj;
+                xrOrigin.Camera = xrCam;
+                xrOrigin.RequestedTrackingOriginMode = XROrigin.TrackingOriginMode.Floor;
+                xrOrigin.CameraYOffset = 1.36144f;
             }
 
             // Directional Light

@@ -4,7 +4,8 @@
     "references": [
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
-        "LumenLoom.Runtime"
+        "LumenLoom.Runtime",
+        "GUID:ce522b6ed64c8be4c989a1d26d0e3275"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
