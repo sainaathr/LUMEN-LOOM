@@ -218,6 +218,5 @@ namespace LumenLoom.Editor
                 if (Application.isBatchMode) EditorApplication.Exit(1);
             }
         }
-        }
     }
 }
