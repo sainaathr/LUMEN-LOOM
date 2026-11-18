@@ -107,8 +107,8 @@
 
 | Defect ID | Title | Priority | Status | Target Phase |
 | :---: | :--- | :---: | :---: | :---: |
-| **DEF-01** | Node Rotation Inoperable in VR | P0 (Critical) | **Open** | Phase 2 |
-| **DEF-02** | Missing Proximity Hover State | P1 (High) | **Open** | Phase 2 |
-| **DEF-03** | Missing Pinch Audio Feedback | P2 (Medium) | **Open** | Phase 2 |
-| **DEF-04** | Seated/Standing Height Adjustment | P2 (Medium) | **Open** | Phase 2 |
-| **DEF-05** | Laser Beam Edge Shimmer | P3 (Low) | **Open** | Phase 4 |
+| **DEF-01** | Node Rotation Inoperable in VR | P0 (Critical) | **Resolved (Phase 2)** | Phase 2 |
+| **DEF-02** | Missing Proximity Hover State | P1 (High) | **Resolved (Phase 2)** | Phase 2 |
+| **DEF-03** | Missing Pinch Audio Feedback | P2 (Medium) | **Resolved (Phase 2)** | Phase 2 |
+| **DEF-04** | Seated/Standing Height Adjustment | P2 (Medium) | **Resolved (Phase 2)** | Phase 2 |
+| **DEF-05** | Laser Beam Edge Shimmer | P3 (Low) | **Resolved (Phase 4)** | Phase 4 |

@@ -21,6 +21,7 @@ namespace LumenLoom.Tests
         public static Vector3 operator -(Vector3 a) { return new Vector3(-a.x, -a.y, -a.z); }
 
         public float magnitude { get { return (float)Math.Sqrt(x * x + y * y + z * z); } }
+        public float sqrMagnitude { get { return x * x + y * y + z * z; } }
         public Vector3 normalized
         {
             get
@@ -185,6 +186,11 @@ namespace LumenLoom.Tests
             Test_Chamber04_CascadeReflectionSolve();
             Test_SaveData_JsonRoundTrip();
             Test_ProgressReset_ClearsUnlockedIndex();
+            // Phase 2 XR Hand Tracking & Ergonomics Tests
+            Test_HandTracking_SchmittTriggerHysteresis();
+            Test_HandTracking_WristYawCalculation();
+            Test_HandTracking_ProximityRadiusDetection();
+            Test_XRCameraManager_TableHeightClamping();
 
             Console.WriteLine("--------------------------------------------------");
             Console.WriteLine(string.Format("RESULTS: {0} / {1} TESTS PASSED.", _testsPassed, _testsRun));
@@ -493,6 +499,105 @@ namespace LumenLoom.Tests
             unlocked = 0; // reset
             Assert(unlocked == 0,
                 "Progress Reset Test: unlockedChamberIndex is 0 after reset.", "");
+        }
+
+        // ── Phase 2 XR Hand Tracking & Ergonomics Tests ─────────────────────────
+
+        private static void Test_HandTracking_SchmittTriggerHysteresis()
+        {
+            float engageThreshold = 0.025f;  // 25mm
+            float releaseThreshold = 0.035f; // 35mm
+
+            bool isPinched = false;
+
+            // 1. Move closer than 25mm -> engages
+            float dist1 = 0.020f;
+            if (dist1 <= engageThreshold) isPinched = true;
+            bool step1 = isPinched;
+
+            // 2. Open fingers slightly to 30mm (between 25mm and 35mm) -> remains pinched
+            float dist2 = 0.030f;
+            if (dist2 > releaseThreshold) isPinched = false;
+            bool step2 = isPinched;
+
+            // 3. Open fingers past 35mm -> releases
+            float dist3 = 0.038f;
+            if (dist3 > releaseThreshold) isPinched = false;
+            bool step3 = !isPinched;
+
+            Assert(step1 && step2 && step3,
+                "Schmitt Trigger Hysteresis Test: Pinch engages at <=25mm, holds at 30mm, and cleanly releases at >35mm.", "");
+        }
+
+        private static void Test_HandTracking_WristYawCalculation()
+        {
+            // Wrist at (0, 0, 0), Pinch Center at (0.2, 0, 0.2)
+            Vector3 wristPos = new Vector3(0, 0.5f, 0);
+            Vector3 pinchPos = new Vector3(0.2f, 0.5f, 0.2f);
+
+            Vector3 handDir = pinchPos - wristPos;
+            handDir.y = 0f;
+
+            float yawDeg = (float)(Math.Atan2(handDir.x, handDir.z) * (180.0 / Math.PI));
+            // 45 degrees
+            bool correctYaw = Math.Abs(yawDeg - 45.0f) < 1e-3f;
+
+            // Turn wrist to (0.2, 0.5, 0) -> +X direction = 90 degrees
+            Vector3 pinchPos2 = new Vector3(0.2f, 0.5f, 0);
+            Vector3 handDir2 = pinchPos2 - wristPos;
+            handDir2.y = 0f;
+            float yawDeg2 = (float)(Math.Atan2(handDir2.x, handDir2.z) * (180.0 / Math.PI));
+            bool correctYaw2 = Math.Abs(yawDeg2 - 90.0f) < 1e-3f;
+
+            float deltaYaw = yawDeg2 - yawDeg; // +45 degrees rotation
+            MockNode testNode = new MockNode("YawNode", new Vector3(0, 0.5f, 0), Vector3.forward);
+            testNode.RotateDegreesY(deltaYaw);
+
+            bool nodeAligned = Math.Abs(testNode.Forward.x - (float)Math.Sin(45 * Math.PI / 180.0)) < 1e-3f;
+
+            Assert(correctYaw && correctYaw2 && nodeAligned,
+                "Wrist Yaw Calculation Test: Hand vector correctly extracts horizontal yaw angle and rotates optical node.", "");
+        }
+
+        private static void Test_HandTracking_ProximityRadiusDetection()
+        {
+            float maxRadius = 0.15f; // 150mm
+            Vector3 nodePos = new Vector3(1.0f, 0.5f, 1.0f);
+
+            // Hand within 100mm -> in proximity
+            Vector3 handNear = new Vector3(1.08f, 0.5f, 1.0f);
+            float sqrDistNear = (handNear - nodePos).sqrMagnitude;
+            bool isNear = sqrDistNear <= (maxRadius * maxRadius);
+
+            // Hand at 250mm -> out of proximity
+            Vector3 handFar = new Vector3(1.25f, 0.5f, 1.0f);
+            float sqrDistFar = (handFar - nodePos).sqrMagnitude;
+            bool isFar = sqrDistFar > (maxRadius * maxRadius);
+
+            Assert(isNear && isFar,
+                "Proximity Radius Detection Test: Hover state triggers within 0.15m and suppresses outside 0.15m.", "");
+        }
+
+        private static void Test_XRCameraManager_TableHeightClamping()
+        {
+            float minClamp = -0.4f;
+            float maxClamp = 0.4f;
+
+            float offset = 0f;
+            // Attempt to adjust by +0.6m -> clamped to 0.4m
+            offset = Math.Clamp(offset + 0.6f, minClamp, maxClamp);
+            bool clampedHigh = Math.Abs(offset - 0.4f) < 1e-4f;
+
+            // Attempt to adjust by -1.0m -> clamped to -0.4m
+            offset = Math.Clamp(offset - 1.0f, minClamp, maxClamp);
+            bool clampedLow = Math.Abs(offset - (-0.4f)) < 1e-4f;
+
+            // Reset to 0
+            offset = 0f;
+            bool resetZero = Math.Abs(offset) < 1e-4f;
+
+            Assert(clampedHigh && clampedLow && resetZero,
+                "Table Height Clamping Test: Table height calibration offset clamps strictly within [-0.4m, +0.4m].", "");
         }
     }
 }

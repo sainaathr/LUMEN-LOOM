@@ -20,15 +20,13 @@ namespace LumenLoom.Interaction
         public Vector3 LastPinchPosition;
         public float LastPinchDistance;
         public PuzzleNode HeldNode;
+        public float LastHandYaw;
+        public bool HasHandYaw;
 
         public HandTrackingState(Handedness handedness)
         {
             Handedness = handedness;
-            IsTracked = false;
-            IsPinched = false;
-            LastPinchPosition = Vector3.zero;
-            LastPinchDistance = float.MaxValue;
-            HeldNode = null;
+            Reset();
         }
 
         public void Reset()
@@ -38,6 +36,25 @@ namespace LumenLoom.Interaction
             LastPinchPosition = Vector3.zero;
             LastPinchDistance = float.MaxValue;
             HeldNode = null;
+            LastHandYaw = 0f;
+            HasHandYaw = false;
+        }
+
+        public void UpdateHandYaw(float currentYaw, Action<float> onRotationDelta = null)
+        {
+            if (!HasHandYaw)
+            {
+                LastHandYaw = currentYaw;
+                HasHandYaw = true;
+                return;
+            }
+
+            float delta = Mathf.DeltaAngle(LastHandYaw, currentYaw);
+            if (Mathf.Abs(delta) >= 0.5f) // 0.5 deg deadzone to suppress physiological tremor
+            {
+                LastHandYaw = currentYaw;
+                onRotationDelta?.Invoke(delta);
+            }
         }
     }
 
@@ -68,12 +85,13 @@ namespace LumenLoom.Interaction
 
         [Header("Rotation & Gestures")]
         [SerializeField] private float rotationScaleMultiplier = 1.0f;
-        [SerializeField] private bool enableWristTurnRotation = false; // Rotation deferred to dedicated gesture
+        [SerializeField] private bool enableWristTurnRotation = true; // Natural wrist/hand twist rotation in VR
 
         [Header("Scene References")]
         [SerializeField] private XROrigin xrOrigin;
         [SerializeField] private PuzzleManager puzzleManager;
         [SerializeField] private BeamSystem beamSystem;
+        [SerializeField] private AudioFeedbackManager audioManager;
 
         [Header("Debug Simulation (Editor / Play Mode)")]
         [SerializeField] private bool simulateHandWithKeys = false;
@@ -168,6 +186,10 @@ namespace LumenLoom.Interaction
             if (beamSystem == null)
             {
                 beamSystem = FindFirstObjectByType<BeamSystem>(FindObjectsInactive.Include);
+            }
+            if (audioManager == null)
+            {
+                audioManager = FindFirstObjectByType<AudioFeedbackManager>(FindObjectsInactive.Include);
             }
         }
 
@@ -296,6 +318,26 @@ namespace LumenLoom.Interaction
             float distance = Vector3.Distance(worldThumbPos, worldIndexPos);
             Vector3 pinchCenter = (worldThumbPos + worldIndexPos) * 0.5f;
 
+            // Extract hand orientation (Wrist pose) for natural in-air rotation
+            XRHandJoint wrist = hand.GetJoint(XRHandJointID.Wrist);
+            if (wrist.TryGetPose(out Pose wristPose) && (wrist.trackingState & XRHandJointTrackingState.Pose) != 0)
+            {
+                Vector3 worldWristPos = originTransform != null ? originTransform.TransformPoint(wristPose.position) : wristPose.position;
+                Vector3 handDir = pinchCenter - worldWristPos;
+                handDir.y = 0f; // Project onto horizontal puzzle plane
+                if (handDir.sqrMagnitude > 0.0001f)
+                {
+                    float currentYaw = Mathf.Atan2(handDir.x, handDir.z) * Mathf.Rad2Deg;
+                    state.UpdateHandYaw(currentYaw, delta =>
+                    {
+                        if (state.IsPinched && state.HeldNode != null && enableWristTurnRotation)
+                        {
+                            HandleMetaHandRotate(delta);
+                        }
+                    });
+                }
+            }
+
             EvaluatePinchState(state, distance, pinchCenter);
         }
 
@@ -396,6 +438,12 @@ namespace LumenLoom.Interaction
                 if (distance <= pinchEngageThreshold)
                 {
                     state.IsPinched = true;
+                    state.HasHandYaw = false;
+
+                    if (_hoveredNode != null)
+                    {
+                        SetHoveredNode(null);
+                    }
 
                     // Requirement 3: A hand cannot select another node while it is already holding one
                     if (state.HeldNode == null)
@@ -406,8 +454,18 @@ namespace LumenLoom.Interaction
                         {
                             state.HeldNode = nearest;
                             HandleMetaHandGrabStart(nearest, state.Handedness);
+                            if (audioManager != null)
+                            {
+                                audioManager.PlayNodeSelectSound();
+                            }
                         }
                     }
+                }
+                else
+                {
+                    // Open hand: evaluate proximity hover glow
+                    PuzzleNode nearest = FindNearestNode(pinchCenter, selectionRadius, state.Handedness);
+                    SetHoveredNode(nearest);
                 }
             }
             else
@@ -416,12 +474,17 @@ namespace LumenLoom.Interaction
                 if (distance > pinchReleaseThreshold)
                 {
                     state.IsPinched = false;
+                    state.HasHandYaw = false;
                     if (state.HeldNode != null)
                     {
                         PuzzleNode releasedNode = state.HeldNode;
                         ReleaseNodeOwnership(releasedNode, state.Handedness);
                         state.HeldNode = null;
                         HandleMetaHandGrabEnd(releasedNode, state.Handedness);
+                        if (audioManager != null)
+                        {
+                            audioManager.PlayNodeReleaseSound();
+                        }
                     }
                 }
                 else
@@ -590,7 +653,12 @@ namespace LumenLoom.Interaction
         public void HandleMetaHandRotate(float angleDeltaDegrees)
         {
             if (_selectedNode == null || !enableWristTurnRotation) return;
+            _selectedNode.RotateNode(angleDeltaDegrees * rotationScaleMultiplier);
             OnNodeRotationDelta?.Invoke(angleDeltaDegrees * rotationScaleMultiplier);
+            if (beamSystem != null)
+            {
+                beamSystem.RecalculateBeam();
+            }
         }
 
         public void HandleMetaHandGrabEnd(PuzzleNode node, Handedness hand)
@@ -715,6 +783,14 @@ namespace LumenLoom.Interaction
         /// </summary>
         public void SimulateTrackedJoints(Handedness handedness, Pose thumbPose, Pose indexPose, bool isTracked = true, bool isWorldSpace = true)
         {
+            SimulateTrackedJoints(handedness, thumbPose, indexPose, Pose.identity, isTracked, isWorldSpace, false);
+        }
+
+        /// <summary>
+        /// Injects simulated tracked joint poses including wrist orientation for testing hand rotation.
+        /// </summary>
+        public void SimulateTrackedJoints(Handedness handedness, Pose thumbPose, Pose indexPose, Pose wristPose, bool isTracked = true, bool isWorldSpace = true, bool hasWrist = true)
+        {
             HandTrackingState state = GetHandState(handedness);
             if (state == null) return;
 
@@ -728,21 +804,41 @@ namespace LumenLoom.Interaction
 
             Vector3 worldThumbPos;
             Vector3 worldIndexPos;
+            Vector3 worldWristPos;
 
             if (isWorldSpace)
             {
                 worldThumbPos = thumbPose.position;
                 worldIndexPos = indexPose.position;
+                worldWristPos = wristPose.position;
             }
             else
             {
                 Transform originTransform = GetTrackingOriginTransform();
                 worldThumbPos = originTransform != null ? originTransform.TransformPoint(thumbPose.position) : thumbPose.position;
                 worldIndexPos = originTransform != null ? originTransform.TransformPoint(indexPose.position) : indexPose.position;
+                worldWristPos = originTransform != null ? originTransform.TransformPoint(wristPose.position) : wristPose.position;
             }
 
             float distance = Vector3.Distance(worldThumbPos, worldIndexPos);
             Vector3 pinchCenter = (worldThumbPos + worldIndexPos) * 0.5f;
+
+            if (hasWrist)
+            {
+                Vector3 handDir = pinchCenter - worldWristPos;
+                handDir.y = 0f;
+                if (handDir.sqrMagnitude > 0.0001f)
+                {
+                    float currentYaw = Mathf.Atan2(handDir.x, handDir.z) * Mathf.Rad2Deg;
+                    state.UpdateHandYaw(currentYaw, delta =>
+                    {
+                        if (state.IsPinched && state.HeldNode != null && enableWristTurnRotation)
+                        {
+                            HandleMetaHandRotate(delta);
+                        }
+                    });
+                }
+            }
 
             EvaluatePinchState(state, distance, pinchCenter);
         }
