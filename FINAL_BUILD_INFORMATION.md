@@ -84,10 +84,16 @@ The Android Gradle post-generation processor (`QuestPostGenerateGradleAndroidPro
 
 ---
 
-## 5. Build Pipeline Execution Command
+## 5. Build Pipeline Execution Commands
 
-To reproduce this exact binary from Unity Editor in headless batchmode:
+### 5.1 Standalone Quest Android APK Build
 ```bash
-Unity.exe -quit -batchmode -projectPath "C:/Path/To/LUMEN-LOOM" -executeMethod LumenLoom.Editor.AndroidBuildPipeline.BuildAndroidQuest -logFile "build.log"
+Unity.exe -quit -batchmode -projectPath "C:/Path/To/LUMEN-LOOM" -executeMethod LumenLoom.Editor.AndroidBuildPipeline.BuildQuestApk -logFile "build_quest.log"
 ```
-The pipeline automatically configures Android ARM64, enables the OpenXR loader, validates the scene list, processes the Gradle manifest, and compiles the signed release APK to the project-relative path `Builds/LUMEN_LOOM_Quest/LumenLoom_Quest.apk`.
+The pipeline automatically configures Android ARM64, enables the OpenXR loader, validates the scene list, processes the Gradle manifest, and compiles the release APK to the project-relative path `Builds/LUMEN_LOOM_Quest/LumenLoom_Quest.apk`.
+
+### 5.2 Standalone Windows (x86_64) PC Build
+```bash
+Unity.exe -quit -batchmode -projectPath "C:/Path/To/LUMEN-LOOM" -executeMethod LumenLoom.Editor.AndroidBuildPipeline.BuildWindowsStandalone -logFile "build_windows.log"
+```
+This compiles the Windows desktop standalone executable to `Builds/LUMEN_LOOM_Windows/LumenLoom.exe`.
