@@ -8,6 +8,7 @@ using UnityEngine.XR.Hands;
 using LumenLoom.Core;
 using LumenLoom.Puzzle;
 using LumenLoom.Interaction;
+using LumenLoom.Audio;
 
 namespace LumenLoom.Tests
 {
@@ -683,7 +684,6 @@ namespace LumenLoom.Tests
             PuzzleNode targetNode = nodes[0];
             Vector3 nodePos = targetNode.transform.position;
 
-            bool selectSoundFired = false;
             AudioFeedbackManager audioMgr = Object.FindFirstObjectByType<AudioFeedbackManager>();
             if (audioMgr == null)
             {

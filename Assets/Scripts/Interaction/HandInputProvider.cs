@@ -5,6 +5,7 @@ using UnityEngine.XR.Hands;
 using Unity.XR.CoreUtils;
 using LumenLoom.Puzzle;
 using LumenLoom.Rendering;
+using LumenLoom.Audio;
 
 namespace LumenLoom.Interaction
 {
@@ -318,7 +319,10 @@ namespace LumenLoom.Interaction
             float distance = Vector3.Distance(worldThumbPos, worldIndexPos);
             Vector3 pinchCenter = (worldThumbPos + worldIndexPos) * 0.5f;
 
-            // Extract hand orientation (Wrist pose) for natural in-air rotation
+            // 1. Evaluate pinch state and node acquisition
+            EvaluatePinchState(state, distance, pinchCenter);
+
+            // 2. Extract hand orientation (Wrist pose) for natural in-air rotation
             XRHandJoint wrist = hand.GetJoint(XRHandJointID.Wrist);
             if (wrist.TryGetPose(out Pose wristPose) && (wrist.trackingState & XRHandJointTrackingState.Pose) != 0)
             {
@@ -332,13 +336,16 @@ namespace LumenLoom.Interaction
                     {
                         if (state.IsPinched && state.HeldNode != null && enableWristTurnRotation)
                         {
-                            HandleMetaHandRotate(delta);
+                            state.HeldNode.RotateNode(delta * rotationScaleMultiplier);
+                            OnNodeRotationDelta?.Invoke(delta * rotationScaleMultiplier);
+                            if (beamSystem != null)
+                            {
+                                beamSystem.RecalculateBeam();
+                            }
                         }
                     });
                 }
             }
-
-            EvaluatePinchState(state, distance, pinchCenter);
         }
 
         private Transform GetTrackingOriginTransform()
@@ -823,6 +830,10 @@ namespace LumenLoom.Interaction
             float distance = Vector3.Distance(worldThumbPos, worldIndexPos);
             Vector3 pinchCenter = (worldThumbPos + worldIndexPos) * 0.5f;
 
+            // 1. Evaluate pinch state and node acquisition
+            EvaluatePinchState(state, distance, pinchCenter);
+
+            // 2. Evaluate in-air wrist rotation
             if (hasWrist)
             {
                 Vector3 handDir = pinchCenter - worldWristPos;
@@ -834,13 +845,16 @@ namespace LumenLoom.Interaction
                     {
                         if (state.IsPinched && state.HeldNode != null && enableWristTurnRotation)
                         {
-                            HandleMetaHandRotate(delta);
+                            state.HeldNode.RotateNode(delta * rotationScaleMultiplier);
+                            OnNodeRotationDelta?.Invoke(delta * rotationScaleMultiplier);
+                            if (beamSystem != null)
+                            {
+                                beamSystem.RecalculateBeam();
+                            }
                         }
                     });
                 }
             }
-
-            EvaluatePinchState(state, distance, pinchCenter);
         }
 
         /// <summary>

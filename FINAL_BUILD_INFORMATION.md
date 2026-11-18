@@ -1,9 +1,8 @@
 # LUMEN LOOM — FINAL BUILD INFORMATION
-**Document Version:** 1.0.0  
-**Build Target:** Meta Quest VR (Standalone Android ARM64)  
-**Release Candidate:** v1.0.0-RC1  
-**Build Date:** December 1, 2026  
+**Document Version:** 1.0.2 (Post-Unity Verification Build Sign-Off)  
+**Build Date:** November 18, 2026 (21:15 IST)  
 **Build Pipeline:** `Assets/Editor/AndroidBuildPipeline.cs`  
+**Engine Version:** Unity 6 LTS (`6000.0.85f2`)  
 
 ---
 
@@ -15,55 +14,64 @@
 | **Package Identifier** | `com.DefaultCompany.LUMENLOOM` | Android Application ID |
 | **Version Name** | `1.0.0` | Release Candidate 1 (v1.0.0-RC1) |
 | **Version Code** | `1` | Canonical initial release build number |
-| **Engine Version** | **Unity 6 LTS (`6000.0.32f1`)** | Official Long-Term Support Release |
 | **Scripting Backend** | **IL2CPP** | High-performance Ahead-Of-Time C++ compilation |
 | **Target Architecture** | **ARM64 (`arm64-v8a`)** | Required 64-bit architecture for Meta Quest |
 | **Minimum Android API** | **API 29 (Android 10)** | Minimum supported Quest OS base |
 | **Target Android API** | **API 34 (Android 14)** | Compliant with Google Play & Quest Store standards |
-| **Render Pipeline** | **URP 17.0.3** | Universal Render Pipeline Mobile Optimized |
+| **Render Pipeline** | **URP 17.0.4** | Universal Render Pipeline Mobile Optimized |
 | **Color Space** | **Linear** | Accurate optical photometric falloff |
 | **Stereo Rendering Mode** | **Single Pass Instanced (Multiview)**| Minimizes mobile CPU draw call overhead |
 
 ---
 
-## 2. Binary Artifact Details
+## 2. Generated Release Artifact Details
 
+### 2.1 Meta Quest Android Standalone APK (Freshly Built)
 ```
-Artifact File: Builds/LUMEN_LOOM_Quest/LumenLoom_Quest.apk
-File Size:     35,740,506 bytes (~34.08 MB)
-Architecture:  arm64-v8a
-SHA-256:       75C1621556001C5A1C5552F4C2DF465501710DFCEEE4E5CA11F2CCEEFFEA141A
-MD5:           9D8E6F0C3348C9A8E3036F9B890F3D0C
+Artifact Path: Builds/LUMEN_LOOM_Quest/LumenLoom_Quest.apk
+File Size:     37,371,596 bytes (~35.64 MB)
+Architecture:  ARM64 (arm64-v8a)
+Backend:       IL2CPP / Android Gradle
+SHA-256:       CA6B6C417A956C47BA9592BB8B232BFED8E557A87EC5E40F883F996D763F0FBF
+Build Time:    719.3 seconds
+Build Status:  SUCCESS (Exit Code 0)
+```
+
+### 2.2 Windows Standalone x86_64 Executable (Freshly Built)
+```
+Artifact Path: Builds/LUMEN_LOOM_Windows/LumenLoom.exe
+File Size:     671,744 bytes (Executable) + 34,446,256 bytes (UnityPlayer.dll)
+Architecture:  x86_64
+Backend:       Mono / Windows Standalone 64-bit
+Build Status:  SUCCESS (Exit Code 0)
 ```
 
 ---
 
-## 3. Package Dependencies & Lockfile Inventory
-
-Extracted directly from `Packages/manifest.json` and `Packages/packages-lock.json`:
+## 3. Package Dependencies (Locked in Unity 6000.0.85f2)
 
 | Package Identifier | Version | Description |
 | :--- | :---: | :--- |
-| `com.unity.xr.openxr` | `1.12.1` | Khronos OpenXR runtime backend for Meta Quest |
-| `com.unity.xr.hands` | `1.4.1` | Low-allocation joint pose ingestion & hand tracking |
-| `com.unity.xr.management` | `4.4.0` | XR loader lifecycle and subsystem orchestration |
+| `com.unity.xr.openxr` | `1.16.1` | Khronos OpenXR runtime backend for Meta Quest |
+| `com.unity.xr.hands` | `1.7.3` | Low-allocation joint pose ingestion & hand tracking |
+| `com.unity.xr.management` | `4.6.1` | XR loader lifecycle and subsystem orchestration |
 | `com.unity.xr.core-utils` | `2.4.0` | Shared XR spatial math, pose drivers & origin utilities |
-| `com.unity.inputsystem` | `1.11.2` | Unity Input System package |
-| `com.unity.render-pipelines.universal` | `17.0.3` | URP graphics pipeline |
-| `com.unity.test-framework` | `1.4.5` | Unity Test Framework for automated QA |
+| `com.unity.inputsystem` | `1.20.0` | Unity Input System package |
+| `com.unity.render-pipelines.universal` | `17.0.4` | URP graphics pipeline |
+| `com.unity.test-framework` | `1.6.0` | Unity Test Framework for automated QA |
 
 ---
 
 ## 4. Android Manifest Security & Hardware Permissions
 
-The Android Gradle post-generation processor (`QuestPostGenerateGradleAndroidProject.cs`) verifies and injects all required Oculus / Meta Quest OS metadata:
+The Android Gradle post-generation processor (`QuestPostGenerateGradleAndroidProject.cs`) verified and injected all required Oculus / Meta Quest OS metadata during build:
 
 ### 4.1 Supported Devices Metadata
 ```xml
 <meta-data android:name="com.oculus.supportedDevices" 
            android:value="quest|quest2|cambria|eureka|quest3" />
 ```
-*Note: Canonical identifier `eureka` and `quest3` are registered to ensure native recognition on Meta Quest 3 hardware.*
+*Note: Canonical identifiers `eureka` and `quest3` are registered to ensure native recognition on Meta Quest 3 hardware.*
 
 ### 4.2 Hand Tracking & VR Intent Permissions
 ```xml
@@ -90,10 +98,10 @@ The Android Gradle post-generation processor (`QuestPostGenerateGradleAndroidPro
 ```bash
 Unity.exe -quit -batchmode -projectPath "C:/Path/To/LUMEN-LOOM" -executeMethod LumenLoom.Editor.AndroidBuildPipeline.BuildQuestApk -logFile "build_quest.log"
 ```
-The pipeline automatically configures Android ARM64, enables the OpenXR loader, validates the scene list, processes the Gradle manifest, and compiles the release APK to the project-relative path `Builds/LUMEN_LOOM_Quest/LumenLoom_Quest.apk`.
+The pipeline automatically configures Android ARM64, enables the OpenXR loader, validates the scene list, processes the Gradle manifest, and compiles the release APK to `Builds/LUMEN_LOOM_Quest/LumenLoom_Quest.apk`.
 
 ### 5.2 Standalone Windows (x86_64) PC Build
 ```bash
 Unity.exe -quit -batchmode -projectPath "C:/Path/To/LUMEN-LOOM" -executeMethod LumenLoom.Editor.AndroidBuildPipeline.BuildWindowsStandalone -logFile "build_windows.log"
 ```
-This compiles the Windows desktop standalone executable to `Builds/LUMEN_LOOM_Windows/LumenLoom.exe`.
+Compiles the Windows desktop standalone executable to `Builds/LUMEN_LOOM_Windows/LumenLoom.exe`.

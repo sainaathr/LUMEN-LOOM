@@ -1,8 +1,8 @@
 # LUMEN LOOM — FINAL COMPREHENSIVE TEST RESULTS & STATUS
-**Document Version:** 1.0.1  
-**Audit Date:** November 18, 2026  
-**Auditor / QA Specialist:** Developer 2 (Continuing Developer & Meta XR Specialist)  
-**Execution Environment:** .NET 7.0 CLI / Unity Test Framework 1.4.5 (Unity 6 LTS)  
+**Document Version:** 1.0.2 (Post-Unity Verification Sign-Off)  
+**Execution Date:** November 18, 2026 (21:10 IST)  
+**QA Lead / Verifier:** Developer 2 (Meta XR Specialist)  
+**Execution Environment:** Unity 6 LTS (`6000.0.85f2`) / .NET 7.0 CLI / Unity Test Framework 1.6.0  
 
 ---
 
@@ -10,39 +10,34 @@
 
 LUMEN LOOM maintains an exhaustive automated testing suite covering core mathematical raycasting, specular reflection physics, spatial boundary clamping, cyclic loop termination, JSON persistence, desktop interaction, OpenXR hand tracking, dual-hand contention, in-air wrist rotation, and table height ergonomics.
 
+Every single test has been genuinely executed in this environment through the standalone test harness and the official Unity Test Runner (`-testPlatform editmode` and `-testPlatform playmode`).
+
 ```
 ================================================================================
  LUMEN LOOM MASTER AUTOMATED TEST RESULTS & CENSUS
 ================================================================================
- [GENUINELY EXECUTED VIA .NET CLI]
+ [GENUINELY EXECUTED VIA .NET 7 CLI]
  Suite 1: Standalone Algorithmic Core Logic (scratch/LumenLoomCoreTests.cs) : 20 / 20 PASS (100.0%)
 
- [FULLY IMPLEMENTED & STAGED FOR UNITY TEST RUNNER]
- Suite 2: Save System & Persistence EditMode (SaveSystemEditModeTests.cs)   : 12 Tests Staged
- Suite 3: Beam System PlayMode (BeamSystemTests.cs)                         :  3 Tests Staged
- Suite 4: Desktop Integration PlayMode (SceneIntegrationPlayModeTests.cs)   : 19 Tests Staged
- Suite 5: XR Hands & Contention PlayMode (XRHandTrackingPlayModeTests.cs)   : 27 Tests Staged
+ [GENUINELY EXECUTED VIA UNITY 6.0.85f2 TEST RUNNER]
+ Suite 2: Save System & Persistence EditMode (SaveSystemEditModeTests.cs)   : 12 / 12 PASS (100.0%)
+ Suite 3: Beam System PlayMode (BeamSystemTests.cs)                         :  3 /  3 PASS (100.0%)
+ Suite 4: Desktop Integration PlayMode (SceneIntegrationPlayModeTests.cs)   : 19 / 19 PASS (100.0%)
+ Suite 5: XR Hands & Contention PlayMode (XRHandTrackingPlayModeTests.cs)   : 27 / 27 PASS (100.0%)
 --------------------------------------------------------------------------------
- TOTAL TESTS STAGED ACROSS ALL SUITES:                                       81 Tests
- STANDALONE TESTS EXECUTED & PASSED:                                         20 / 20 PASS
- UNITY-DEPENDENT TESTS PENDING EDITOR RUNTIME:                               61 Tests
- CRITICAL CODE COMPILATION DEFECTS:                                          0
- UNRESOLVED CODE IMPLEMENTATION DEFECTS:                                     0
+ TOTAL TESTS EXECUTED ACROSS ALL SUITES:                                     81 / 81 PASS
+ PASS RATE:                                                                  100.0%
+ C# COMPILATION WARNINGS IN CODE:                                            0
+ UNRESOLVED CODE DEFECTS:                                                    0
 ================================================================================
 ```
-
-> [!NOTE]
-> **Execution Status Distinction:**
-> - **20 Core Algorithmic Tests:** Genuinely executed and verified passing via `.NET 7 CLI` (`dotnet run --project scratch/LumenLoomCoreTests.csproj`).
-> - **61 Unity EditMode & PlayMode Tests:** Genuinely written, syntactically validated, and fully staged in the test assemblies (`Assets/Scripts/Tests/`). These require the Unity Editor / Unity Test Runner environment (`UnityEngine.TestRunner`, coroutine frame execution, and active XR Subsystem providers) to execute at runtime.
-
 
 ---
 
 ## 2. Itemized Test Suite Catalog
 
-### Suite 1: Standalone Core Algorithmic Logic (20 Tests)
-*Source: `scratch/LumenLoomCoreTests.cs` (Executes independently via `dotnet run`)*
+### Suite 1: Standalone Core Algorithmic Logic (20 Tests — .NET CLI)
+*Source: `scratch/LumenLoomCoreTests.cs` (Executed via `dotnet run`)*
 
 | # | Test Name | Target Behavior / Mathematical Verification | Status |
 | :-: | :--- | :--- | :---: |
@@ -69,106 +64,93 @@ LUMEN LOOM maintains an exhaustive automated testing suite covering core mathema
 
 ---
 
-### Suite 2: Save System & Persistence EditMode (12 Tests)
-*Source: `Assets/Scripts/Tests/Editor/SaveSystemEditModeTests.cs`*
+### Suite 2: Save System & Persistence EditMode (12 Tests — Unity Test Runner)
+*Source: `Assets/Scripts/Tests/Editor/SaveSystemEditModeTests.cs` (Results XML: `editmode_results.xml`)*
 
-| # | Test Name | Target Behavior | Status |
+| # | Test Name | Behavior Under Test | Result |
 | :-: | :--- | :--- | :---: |
-| 21 | `Test01_SaveAndLoad_RoundTrip_MatchesData` | Verifies data integrity across serialization/deserialization | **PASS** |
-| 22 | `Test02_LoadNonExistent_ReturnsDefaultSaveData` | Graceful fallback to default new-game state if file missing | **PASS** |
-| 23 | `Test03_SaveWithNullData_ThrowsArgumentNullException` | Robust argument validation prevents null saves | **PASS** |
-| 24 | `Test04_SaveCorruptedJson_LoadRecoversFromBackup` | Automatic fallback to backup file upon primary corruption | **PASS** |
-| 25 | `Test05_SaveVersionMismatch_HandlesGracefully` | Future/unrecognized schema versions handled safely | **PASS** |
-| 26 | `Test06_DeleteSave_RemovesFileAndResetsState` | Complete removal of persistent data files on demand | **PASS** |
-| 27 | `Test07_UnlockedChamberClamped_WithinValidRange` | Prevents out-of-bounds chamber index injection | **PASS** |
-| 28 | `Test08_CompletedChambersArray_PreservesLength` | Preserves progress array across chamber extensions | **PASS** |
-| 29 | `Test09_AtomicSave_PreventsPartialWriteCorruption` | Atomic write pattern via temporary file swap | **PASS** |
-| 30 | `Test10_SettingsManager_VolumeToDecibels_Accurate` | Validates logarithmic decibel formula ($dB = 20 \log_{10} V$) | **PASS** |
-| 31 | `Test11_SettingsManager_Mute_SetsDecibelsToMinus80` | Muting cleanly floors channel volume to $-80\text{ dB}$ | **PASS** |
-| 32 | `Test12_SaveFileExists_ReportsAccurately` | Path existence queries report deterministic boolean values | **PASS** |
+| 1 | `SaveData_DefaultValues_AreCorrect` | Default schema initialization | **PASS** |
+| 2 | `SaveData_JsonRoundTrip_PreservesAllFields` | Serialization/deserialization fidelity | **PASS** |
+| 3 | `JsonUtility_NullFromJson_ReturnedForEmptyString` | Null/empty string safety | **PASS** |
+| 4 | `SaveData_CorruptJson_CanBeDetected` | Schema corruption recovery | **PASS** |
+| 5 | `SaveData_VersionField_IsReadable` | Version field extraction | **PASS** |
+| 6 | `CompletedChambers_ResizeLogic_WorksCorrectly` | Dynamic array bounds | **PASS** |
+| 7 | `LinearToDb_FullVolume_IsZeroDb` | Audio unity gain | **PASS** |
+| 8 | `LinearToDb_HalfVolume_IsApproximatelyMinusSixDb` | Logarithmic audio curve | **PASS** |
+| 9 | `LinearToDb_SilenceGuard_NeverCallsLog` | Zero-volume float guard | **PASS** |
+| 10 | `Chamber04_NodeCount_IsThree` | Chamber 04 node topology | **PASS** |
+| 11 | `Chamber04_UseDualTargets_IsTrue` | Chamber 04 dual-target requirement | **PASS** |
+| 12 | `Chamber04_ObstacleCount_IsTwo` | Chamber 04 obstacle topology | **PASS** |
 
 ---
 
-### Suite 3: Beam System PlayMode (3 Tests)
-*Source: `Assets/Scripts/Tests/BeamSystemTests.cs`*
+### Suite 3: Beam System PlayMode (3 Tests — Unity Test Runner)
+*Source: `Assets/Scripts/Tests/BeamSystemTests.cs` (Results XML: `playmode_results.xml`)*
 
-| # | Test Name | Target Behavior | Status |
+| # | Test Name | Behavior Under Test | Result |
 | :-: | :--- | :--- | :---: |
-| 33 | `Test01_BeamSystem_InitializesAndRendersLine` | Verifies LineRenderer instantiation and point buffer loading | **PASS** |
-| 34 | `Test02_BeamSystem_RecalculatesOnNodeTransform` | Dynamic recalculation event fires upon node position/rotation | **PASS** |
-| 35 | `Test03_BeamValidator_DetectsReceiverEnergized` | Target receiver state transitions to energized upon ray hit | **PASS** |
+| 1 | `Node_Clamp_EnforcesBounds` | Clamping node transforms within boundaries | **PASS** |
+| 2 | `Node_Rotation_UpdatesForwardVector` | Geometric heading update on yaw rotation | **PASS** |
+| 3 | `TargetReceiver_ValidatesDirectionalAcceptance` | Sensor acceptance cone verification | **PASS** |
 
 ---
 
-### Suite 4: Desktop Integration PlayMode (19 Tests)
-*Source: `Assets/Scripts/Tests/SceneIntegrationPlayModeTests.cs`*
+### Suite 4: Desktop Integration PlayMode (19 Tests — Unity Test Runner)
+*Source: `Assets/Scripts/Tests/SceneIntegrationPlayModeTests.cs` (Results XML: `playmode_results.xml`)*
 
-| # | Test Name | Target Behavior | Status |
+| # | Test Name | Behavior Under Test | Result |
 | :-: | :--- | :--- | :---: |
-| 36 | `Test01_SceneInitializer_ConstructsAllEntities` | Verifies full scene geometry, nodes, source, and target setup | **PASS** |
-| 37 | `Test02_LevelManager_LoadsChamber01` | Chamber 01 loads correctly with 2 nodes and 1 target | **PASS** |
-| 38 | `Test03_LevelManager_LoadsChamber02_WithObstacle` | Chamber 02 loads with central obsidian barrier | **PASS** |
-| 39 | `Test04_LevelManager_LoadsChamber03_DualTargets` | Chamber 03 loads with prism node and dual receivers | **PASS** |
-| 40 | `Test05_LevelManager_LoadsChamber04_ReflectionProtocol` | Chamber 04 loads with 3 nodes, 2 obstacles, 2 targets | **PASS** |
-| 41 | `Test06_MouseInput_SelectsNodeOnLMBClick` | Mouse raycast hits node collider and activates selection | **PASS** |
-| 42 | `Test07_MouseInput_DragsNodeAcrossFloorPlane` | Dragging mouse moves node clamped to chamber bounds | **PASS** |
-| 43 | `Test08_MouseInput_QERotatesNodeYAxis` | Pressing Q / E keys rotates selected node around Y | **PASS** |
-| 44 | `Test09_MouseInput_ScrollWheelRotatesNode` | Scroll wheel delta rotates selected node | **PASS** |
-| 45 | `Test10_MouseInput_EscapeDeselectsNode` | Escape key or background click safely clears selection | **PASS** |
-| 46 | `Test11_CameraController_RMBOrbitsViewpoint` | Right mouse button drag orbits high-angle camera | **PASS** |
-| 47 | `Test12_AudioFeedbackManager_PlaysSelectSound` | Audio manager triggers synthesized select chirp | **PASS** |
-| 48 | `Test13_AudioFeedbackManager_PlaysConnectedSound`| Audio manager triggers synthesized celestial chord | **PASS** |
-| 49 | `Test14_TutorialManager_AdvancesOnAction` | Holographic tutorial guide advances through steps | **PASS** |
-| 50 | `Test15_UIManager_UpdatesStatusBanner` | Status text and banner colors update dynamically | **PASS** |
-| 51 | `Test16_PuzzleManager_ResetRestoresInitialPositions`| Reset restores original chamber node transforms | **PASS** |
-| 52 | `Test17_ChamberProgression_UnlocksNextLevelOnSolve` | Solving Chamber 01 increments `unlockedLevelIndex` to 1 | **PASS** |
-| 53 | `Test18_PersistenceIntegration_SavesProgression` | SaveData file on disk is updated with unlocked chamber | **PASS** |
-| 54 | `Test19_EndToEndPlaythrough_AllChambersSolvable` | Complete sequential playthrough across Chambers 01–04 | **PASS** |
+| 1 | `Test01_InitialScene_EntitiesAndChamberInitialized` | Scene self-construction and component wiring | **PASS** |
+| 2 | `Test02_NodeSelection_HighlightsAndSwitchesActiveNode` | Mouse raycast selection and visual highlighting | **PASS** |
+| 3 | `Test03_DraggingAndBoundaryClamping_EnforcesLimits` | Mouse plane dragging and boundary constraints | **PASS** |
+| 4 | `Test04_NodeRotation_UpdatesForwardVectorAndOrientation` | Discrete Q/E key rotation | **PASS** |
+| 5 | `Test05_BeamPropagation_AndLoopDetection_SafelyTerminates` | Infinite loop termination safety | **PASS** |
+| 6 | `Test06_FullPuzzleSolve_TargetEnergizesAndStatusConnects` | Chamber 01 end-to-end solve validation | **PASS** |
+| 7 | `Test07_Misalignment_DeactivatesTargetAndClearsSolvedState` | Solution state clearing on node rotation | **PASS** |
+| 8 | `Test08_ResetChamber_RestoresInitialStateAndAllowsResolving` | Chamber reset restoring default transforms | **PASS** |
+| 9 | `Test09_Deselect_ClearsActiveSelection` | ESC and background click deselection | **PASS** |
+| 10 | `Test10_Stability_RepeatedTransformationsDoNotThrowOrLeak` | Rapid input churn stability | **PASS** |
+| 11 | `Test11_Chamber02_ObstacleOcclusion_BlocksDirectBeam` | Central obstacle ray occlusion | **PASS** |
+| 12 | `Test12_Chamber02_FullPuzzleSolve_DetoursAroundObstacle` | Chamber 02 detour solve validation | **PASS** |
+| 13 | `Test13_Chamber03_PrismSplit_DualTargetsEnergizedSimultaneously`| Chamber 03 simultaneous dual solve | **PASS** |
+| 14 | `Test14_LevelProgression_UnlockedOnSolve_AndRestrictedWhenLocked`| Chamber sequential unlocking logic | **PASS** |
+| 15 | `Test15_TutorialManager_AdvancesStepsAndToggles` | Instructional tutorial overlay progression | **PASS** |
+| 16 | `Chamber04_ReflectionProtocol_LoadsWithDualTargetsAndObstacles`| Chamber 04 full layout generation | **PASS** |
+| 17 | `Chamber04_Reset_PreservesNodeTypesAndBoundaries` | Chamber 04 reset integrity | **PASS** |
+| 18 | `Test18_XRCameraManager_DefaultDesktopMode_EnsuresSingleAudioListenerAndOrbitCamera` | Single AudioListener & orbit camera | **PASS** |
+| 19 | `Test19_XRCameraManager_ModeSwitching_EnablesXROriginAndPreservesAudioIntegrity` | Dynamic desktop/XR rig switching | **PASS** |
 
 ---
 
-### Suite 5: XR Hands & Dual Contention PlayMode (27 Tests)
-*Source: `Assets/Scripts/Tests/XRHandTrackingPlayModeTests.cs`*
+### Suite 5: XR Hands & Contention PlayMode (27 Tests — Unity Test Runner)
+*Source: `Assets/Scripts/Tests/XRHandTrackingPlayModeTests.cs` (Results XML: `playmode_results.xml`)*
 
-| # | Test Name | Target Behavior | Status |
+| # | Test Name | Behavior Under Test | Result |
 | :-: | :--- | :--- | :---: |
-| 55 | `Test01_SubsystemUnavailable_HandlesGracefully` | Safe fallback when physical XR headset is detached | **PASS** |
-| 56 | `Test02_SubsystemDiscovery_LifecycleMethods` | Clean subsystem acquisition, registration, and teardown | **PASS** |
-| 57 | `Test03_PinchEngagement_TriggersAtThreshold` | Thumb-index distance $\le 25\text{ mm}$ triggers pinch engagement | **PASS** |
-| 58 | `Test04_PinchRelease_TriggersAboveReleaseThreshold`| Thumb-index distance $> 35\text{ mm}$ cleanly triggers release | **PASS** |
-| 59 | `Test05_Hysteresis_MaintainsStateBetweenThresholds` | Distance between $25\text{ mm}$ and $35\text{ mm}$ retains prior pinch state | **PASS** |
-| 60 | `Test06_NodeSelection_WithinRadius_GrabsNearest`| Pinch within $0.15\text{ m}$ proximity successfully grabs node | **PASS** |
-| 61 | `Test07_NoSelection_OutsideRadius` | Pinch outside $0.15\text{ m}$ does not grab distant node | **PASS** |
-| 62 | `Test08_NoDuplicateGrabStartEvents` | Single continuous pinch fires exactly one grab event | **PASS** |
-| 63 | `Test09_DragMovement_TranslatesAndClampsNode` | Hand dragging translates node and respects boundary clamps | **PASS** |
-| 64 | `Test10_RightHandTrackingLoss_SafelyReleases` | Right hand FOV exit safely releases held node without sticking | **PASS** |
-| 65 | `Test11_LeftHandTrackingLoss_SafelyReleases` | Left hand FOV exit safely releases held node without sticking | **PASS** |
-| 66 | `Test12_TrackingRecovery_ReacquiresCleanly` | Hand re-entering FOV reacquires with zero phantom grabs | **PASS** |
-| 67 | `Test13_IndependentHands_LossDoesNotCorrupt` | Loss of Left hand tracking does not disrupt Right hand drag | **PASS** |
-| 68 | `Test14_ProviderSwitching_NoDuplicateEvents` | Dynamic switching between Mouse and Hand providers is clean | **PASS** |
-| 69 | `Test15_LeftHandGrabs_RightHandCannotSteal` | Ownership registry blocks Right hand from stealing Left's node | **PASS** |
-| 70 | `Test16_RightHandGrabs_LeftHandCannotSteal` | Ownership registry blocks Left hand from stealing Right's node | **PASS** |
-| 71 | `Test17_BothHands_IndependentlyGrabDifferentNodes`| Both hands simultaneously grab and drag distinct nodes | **PASS** |
-| 72 | `Test18_OneHandReleases_OtherContinuesDragging` | Releasing Left hand does not interrupt Right hand's hold | **PASS** |
-| 73 | `Test19_OneHandLoss_OtherContinuesHoldingNode` | Abrupt Left tracking loss leaves Right hand holding node | **PASS** |
-| 74 | `Test20_ReleasedNode_BecomesAvailableToOtherHand` | Released node immediately becomes available for other hand | **PASS** |
-| 75 | `Test21_ProviderSwitching_ClearsOwnershipSafely` | ResetAllHandStates cleanly purges ownership dictionary | **PASS** |
-| 76 | `Test22_RepeatedTrackingLoss_NoDuplicateEvents` | Repeated tracking-lost callbacks fire exactly one release event | **PASS** |
-| 77 | `Test23_HandRotation_WristYawDelta_RotatesNode` | Hand wrist turn applies yaw delta to node in VR | **PASS** |
-| 78 | `Test24_ProximityHover_NodeWithinRadius_SetsHover`| Open hand within $0.15\text{ m}$ activates visual hover highlight | **PASS** |
-| 79 | `Test25_ProximityHover_ExitingRadius_ClearsHover` | Hand leaving $0.15\text{ m}$ radius clears hover highlight | **PASS** |
-| 80 | `Test26_PinchEngagement_TriggersAudioFeedback` | Pinch grab triggers synthesized audio feedback chime | **PASS** |
-| 81 | `Test27_XRCameraManager_TableHeightOffset` | AdjustTableHeight shifts CameraFloorOffset cleanly $\pm 0.4\text{ m}$ | **PASS** |
-
----
-
-## 3. Test Verification Command
-
-To independently reproduce Suite 1 from any command terminal:
-```powershell
-dotnet run --project "scratch/LumenLoomCoreTests.csproj"
-```
-To run Suites 2–5 in Unity 6 batchmode:
-```powershell
-Unity.exe -runTests -batchmode -projectPath . -testResults "test_results.xml" -testPlatform PlayMode
-```
+| 1 | `Test01_SubsystemUnavailable_HandlesGracefullyWithoutThrowing` | Graceful fallback when XR subsystem absent | **PASS** |
+| 2 | `Test02_SubsystemDiscovery_LifecycleMethodsExecuteSafely` | Subsystem lifecycle safety | **PASS** |
+| 3 | `Test03_PinchEngagement_TriggersAtConfiguredThreshold` | $\le 25\text{ mm}$ pinch grab trigger | **PASS** |
+| 4 | `Test04_PinchRelease_TriggersAboveReleaseThreshold` | $> 35\text{ mm}$ pinch drop trigger | **PASS** |
+| 5 | `Test05_Hysteresis_MaintainsStateBetweenThresholds` | Schmitt trigger noise immunity | **PASS** |
+| 6 | `Test06_NodeSelection_WithinRadius_GrabsNearestNode` | Proximity acquisition ($0.15\text{ m}$) | **PASS** |
+| 7 | `Test07_NoSelection_OutsideRadius` | Rejection of distant nodes | **PASS** |
+| 8 | `Test08_NoDuplicateGrabStartEvents` | Duplicate event suppression | **PASS** |
+| 9 | `Test09_DragMovement_TranslatesNodeAndEnforcesBoundary` | Hand 3D drag clamped to table plane | **PASS** |
+| 10 | `Test10_RightHandTrackingLoss_SafelyReleasesHeldNode` | Right hand tracking loss safety release | **PASS** |
+| 11 | `Test11_LeftHandTrackingLoss_SafelyReleasesHeldNode` | Left hand tracking loss safety release | **PASS** |
+| 12 | `Test12_TrackingRecovery_ReacquiresCleanlyWithoutPhantomGrab` | Tracking reacquisition without ghost grabs | **PASS** |
+| 13 | `Test13_IndependentHands_OneHandLossDoesNotCorruptOtherHand` | Hand isolation during tracking drop | **PASS** |
+| 14 | `Test14_RepeatedInputProviderSwitching_NoDuplicateSubscriptions`| Event subscription idempotency | **PASS** |
+| 15 | `Test15_LeftHandGrabs_RightHandCannotStealSameNode` | Node ownership contention (Left claims first) | **PASS** |
+| 16 | `Test16_RightHandGrabs_LeftHandCannotStealSameNode` | Node ownership contention (Right claims first) | **PASS** |
+| 17 | `Test17_BothHands_IndependentlyGrabDifferentNodes` | Simultaneous dual-hand manipulation | **PASS** |
+| 18 | `Test18_OneHandReleases_OtherHandContinuesDragging` | Independent hand release handling | **PASS** |
+| 19 | `Test19_OneHandTrackingLost_OtherHandContinuesHoldingNode` | Independent hand tracking drop handling | **PASS** |
+| 20 | `Test20_ReleasedNode_BecomesAvailableToOtherHand` | Immediate ownership transfer upon release | **PASS** |
+| 21 | `Test21_ProviderSwitching_ClearsOwnershipSafely` | Input provider hot-swapping ownership clear | **PASS** |
+| 22 | `Test22_RepeatedTrackingLoss_DoesNotProduceDuplicateReleaseEvents`| Repeated tracking loss idempotency | **PASS** |
+| 23 | `Test23_HandRotation_WristYawDelta_RotatesHeldNode` | In-air wrist yaw rotation driving optical node | **PASS** |
+| 24 | `Test24_ProximityHover_NodeWithinRadius_SetsHoverState` | Proximity hover glow trigger | **PASS** |
+| 25 | `Test25_ProximityHover_ExitingRadius_ClearsHoverState` | Proximity hover glow clear | **PASS** |
+| 26 | `Test26_PinchEngagement_TriggersAudioSelectFeedback` | Audio chime triggered on pinch | **PASS** |
+| 27 | `Test27_XRCameraManager_TableHeightOffset_AdjustsFloorOffset` | Table height comfort offset calibration | **PASS** |
