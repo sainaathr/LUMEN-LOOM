@@ -8,6 +8,7 @@ using UnityEngine.XR.Hands;
 using LumenLoom.Core;
 using LumenLoom.Puzzle;
 using LumenLoom.Interaction;
+using LumenLoom.Audio;
 
 namespace LumenLoom.Tests
 {
@@ -606,6 +607,119 @@ namespace LumenLoom.Tests
 
             Assert.AreEqual(1, releaseCount, "Repeated tracking loss calls must NOT produce duplicate release events.");
             _handProvider.OnNodeReleased -= releaseAction;
+        }
+
+        [UnityTest]
+        public IEnumerator Test23_HandRotation_WristYawDelta_RotatesHeldNode()
+        {
+            var nodes = _puzzleMgr.Nodes;
+            Assert.IsTrue(nodes.Count >= 1);
+            PuzzleNode targetNode = nodes[0];
+            Vector3 nodePos = targetNode.transform.position;
+
+            // Grab node with Right hand: wrist pointing forward (0 degrees yaw)
+            Pose rThumb = new Pose(nodePos, Quaternion.identity);
+            Pose rIndex = new Pose(nodePos + new Vector3(0.02f, 0f, 0f), Quaternion.identity);
+            Pose rWristInitial = new Pose(nodePos - new Vector3(0f, 0f, 0.2f), Quaternion.identity);
+
+            _handProvider.SimulateTrackedJoints(Handedness.Right, rThumb, rIndex, rWristInitial, isTracked: true, isWorldSpace: true, hasWrist: true);
+            yield return null;
+            Assert.AreEqual(targetNode, _handProvider.RightHandState.HeldNode);
+
+            float initialAngle = targetNode.transform.eulerAngles.y;
+
+            // Turn wrist 45 degrees clockwise (wrist moves to the left relative to pinch)
+            Vector3 wristRotated = nodePos - Quaternion.Euler(0, 45f, 0) * new Vector3(0f, 0f, 0.2f);
+            Pose rWristRotated = new Pose(wristRotated, Quaternion.identity);
+
+            _handProvider.SimulateTrackedJoints(Handedness.Right, rThumb, rIndex, rWristRotated, isTracked: true, isWorldSpace: true, hasWrist: true);
+            yield return null;
+
+            float newAngle = targetNode.transform.eulerAngles.y;
+            float delta = Mathf.DeltaAngle(initialAngle, newAngle);
+            Assert.Greater(Mathf.Abs(delta), 5f, "Wrist turn must rotate held node.");
+        }
+
+        [UnityTest]
+        public IEnumerator Test24_ProximityHover_NodeWithinRadius_SetsHoverState()
+        {
+            var nodes = _puzzleMgr.Nodes;
+            Assert.IsTrue(nodes.Count >= 1);
+            PuzzleNode targetNode = nodes[0];
+            Vector3 nearPos = targetNode.transform.position + new Vector3(0.08f, 0f, 0f);
+
+            // Open hand (0.05m pinch distance > 0.035m release threshold) near node
+            Pose thumb = new Pose(nearPos, Quaternion.identity);
+            Pose index = new Pose(nearPos + new Vector3(0.05f, 0f, 0f), Quaternion.identity);
+
+            _handProvider.SimulateTrackedJoints(Handedness.Right, thumb, index, isTracked: true);
+            yield return null;
+
+            Assert.AreEqual(targetNode, _handProvider.HoveredNode, "Hovered node must be detected within proximity radius.");
+        }
+
+        [UnityTest]
+        public IEnumerator Test25_ProximityHover_ExitingRadius_ClearsHoverState()
+        {
+            var nodes = _puzzleMgr.Nodes;
+            Assert.IsTrue(nodes.Count >= 1);
+            PuzzleNode targetNode = nodes[0];
+            Vector3 farPos = targetNode.transform.position + new Vector3(0.40f, 0f, 0f); // Outside 0.15m radius
+
+            // Open hand far from any node
+            Pose thumb = new Pose(farPos, Quaternion.identity);
+            Pose index = new Pose(farPos + new Vector3(0.05f, 0f, 0f), Quaternion.identity);
+
+            _handProvider.SimulateTrackedJoints(Handedness.Right, thumb, index, isTracked: true);
+            yield return null;
+
+            Assert.IsNull(_handProvider.HoveredNode, "Hovered node must be cleared when hand exits proximity radius.");
+        }
+
+        [UnityTest]
+        public IEnumerator Test26_PinchEngagement_TriggersAudioSelectFeedback()
+        {
+            var nodes = _puzzleMgr.Nodes;
+            Assert.IsTrue(nodes.Count >= 1);
+            PuzzleNode targetNode = nodes[0];
+            Vector3 nodePos = targetNode.transform.position;
+
+            AudioFeedbackManager audioMgr = Object.FindFirstObjectByType<AudioFeedbackManager>();
+            if (audioMgr == null)
+            {
+                GameObject aObj = new GameObject("TestAudioMgr");
+                audioMgr = aObj.AddComponent<AudioFeedbackManager>();
+            }
+
+            // Pinch and grab node
+            Pose thumb = new Pose(nodePos, Quaternion.identity);
+            Pose index = new Pose(nodePos + new Vector3(0.02f, 0f, 0f), Quaternion.identity);
+            _handProvider.SimulateTrackedJoints(Handedness.Right, thumb, index, isTracked: true);
+            yield return null;
+
+            Assert.AreEqual(targetNode, _handProvider.RightHandState.HeldNode);
+        }
+
+        [UnityTest]
+        public IEnumerator Test27_XRCameraManager_TableHeightOffset_AdjustsFloorOffset()
+        {
+            GameObject camMgrObj = new GameObject("TestXRCameraMgr");
+            XRCameraManager camMgr = camMgrObj.AddComponent<XRCameraManager>();
+
+            float initialOffset = camMgr.TableHeightCalibrationOffset;
+            Assert.AreEqual(0f, initialOffset);
+
+            camMgr.AdjustTableHeight(0.15f);
+            Assert.AreEqual(0.15f, camMgr.TableHeightCalibrationOffset, 0.001f);
+
+            camMgr.AdjustTableHeight(-0.30f);
+            Assert.AreEqual(-0.15f, camMgr.TableHeightCalibrationOffset, 0.001f);
+
+            camMgr.ResetTableHeight();
+            Assert.AreEqual(0f, camMgr.TableHeightCalibrationOffset);
+
+            Object.DestroyImmediate(camMgrObj);
+            yield return null;
         }
     }
 }

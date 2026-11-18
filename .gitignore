@@ -48,3 +48,9 @@ crash*
 /.utmp/
 /[Uu]tmp/
 
+# .NET Build Output
+[Bb]in/
+[Oo]bj/
+
+
+.vsconfig

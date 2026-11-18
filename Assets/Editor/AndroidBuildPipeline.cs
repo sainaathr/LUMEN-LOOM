@@ -161,12 +161,61 @@ namespace LumenLoom.Editor
             if (summary.result == BuildResult.Succeeded)
             {
                 Debug.Log($"[AndroidBuildPipeline] Build succeeded! Size: {summary.totalSize} bytes in {summary.totalTime.TotalSeconds:F1} seconds.");
-                EditorApplication.Exit(0);
+                if (Application.isBatchMode) EditorApplication.Exit(0);
             }
             else
             {
                 Debug.LogError($"[AndroidBuildPipeline] Build failed with result {summary.result}: {summary.totalErrors} errors.");
-                EditorApplication.Exit(1);
+                if (Application.isBatchMode) EditorApplication.Exit(1);
+            }
+        }
+
+        [MenuItem("Tools/LUMEN LOOM/Build/Build Quest Android APK", false, 20)]
+        public static void BuildQuestApkMenuItem()
+        {
+            BuildQuestApk();
+        }
+
+        [MenuItem("Tools/LUMEN LOOM/Build/Build Windows Standalone (x86_64)", false, 21)]
+        public static void BuildWindowsStandalone()
+        {
+            Debug.Log("[AndroidBuildPipeline] Starting Windows Standalone (x86_64) Build...");
+
+            string buildDir = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Builds", "LUMEN_LOOM_Windows"));
+            if (!Directory.Exists(buildDir))
+            {
+                Directory.CreateDirectory(buildDir);
+            }
+
+            string exePath = Path.Combine(buildDir, "LumenLoom.exe");
+            Debug.Log($"[AndroidBuildPipeline] Target executable path: {exePath}");
+
+            string[] scenes = new string[]
+            {
+                "Assets/Scenes/MainPuzzleScene.unity"
+            };
+
+            BuildPlayerOptions buildPlayerOptions = new BuildPlayerOptions
+            {
+                scenes = scenes,
+                locationPathName = exePath,
+                target = BuildTarget.StandaloneWindows64,
+                targetGroup = BuildTargetGroup.Standalone,
+                options = BuildOptions.None
+            };
+
+            BuildReport report = BuildPipeline.BuildPlayer(buildPlayerOptions);
+            BuildSummary summary = report.summary;
+
+            if (summary.result == BuildResult.Succeeded)
+            {
+                Debug.Log($"[AndroidBuildPipeline] Windows Standalone build succeeded! Size: {summary.totalSize} bytes in {summary.totalTime.TotalSeconds:F1} seconds.");
+                if (Application.isBatchMode) EditorApplication.Exit(0);
+            }
+            else
+            {
+                Debug.LogError($"[AndroidBuildPipeline] Windows Standalone build failed with result {summary.result}: {summary.totalErrors} errors.");
+                if (Application.isBatchMode) EditorApplication.Exit(1);
             }
         }
     }

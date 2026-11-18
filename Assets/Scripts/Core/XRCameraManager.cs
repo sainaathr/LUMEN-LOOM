@@ -53,6 +53,11 @@ namespace LumenLoom.Core
         [SerializeField] private MouseInputProvider mouseInputProvider;
         [SerializeField] private HandInputProvider handInputProvider;
 
+        [Header("XR Ergonomics & Table Calibration")]
+        [SerializeField] private float tableHeightCalibrationOffset = 0f;
+
+        public float TableHeightCalibrationOffset => tableHeightCalibrationOffset;
+
         private CameraRigMode _activeMode = CameraRigMode.Desktop;
         private bool _isInitialized;
 
@@ -331,6 +336,32 @@ namespace LumenLoom.Core
             }
 
             Debug.Log("[XRCameraManager] Activated XR Mode (XR Origin, 6DoF TrackedPoseDriver, Hand Interaction, Single AudioListener).");
+        }
+
+        /// <summary>
+        /// Adjusts table height relative to the player for seated/standing comfort.
+        /// Clamped between -0.4m and +0.4m.
+        /// </summary>
+        public void AdjustTableHeight(float deltaMeters)
+        {
+            tableHeightCalibrationOffset = Mathf.Clamp(tableHeightCalibrationOffset + deltaMeters, -0.4f, 0.4f);
+            ApplyTableHeightOffset();
+        }
+
+        public void ResetTableHeight()
+        {
+            tableHeightCalibrationOffset = 0f;
+            ApplyTableHeightOffset();
+        }
+
+        private void ApplyTableHeightOffset()
+        {
+            if (xrOrigin != null && xrOrigin.CameraFloorOffsetObject != null)
+            {
+                Vector3 pos = xrOrigin.CameraFloorOffsetObject.transform.localPosition;
+                pos.y = tableHeightCalibrationOffset;
+                xrOrigin.CameraFloorOffsetObject.transform.localPosition = pos;
+            }
         }
 
         /// <summary>
